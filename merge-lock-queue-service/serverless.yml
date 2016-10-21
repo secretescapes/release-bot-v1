@@ -55,13 +55,9 @@ functions:
     handler: handler.add
     events:
       - http:
-          path: mergelock/add/{username}
-          method: get
+          path: mergelock/add/
+          method: post
           integration: lambda
-          request:
-            parameters:
-              paths:
-                username: true
   list:
     handler: handler.list
     events:

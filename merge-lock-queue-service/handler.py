@@ -6,15 +6,19 @@ def add(event, context):
     username = _get_username(event)
     table = _getTable()
 
-    try:
-        _insert(username, table)
-        message = "Hey %s! We have added you to the queue!" % username
-    except botocore.exceptions.ClientError as e:
-        message = _process_exception(e, username)
-    
+    if username is not None:
+        try:
+            _insert(username, table)
+            message = "Hey %s! We have added you to the queue!" % username
+        except botocore.exceptions.ClientError as e:
+            message = _process_exception(e, username)
+    else:
+        message = "You must provide a name"
     return {
-        "message": message
-    }
+            "message": message
+        }
+
+    
 
 def list(event, context):
     table = _getTable()
@@ -26,8 +30,8 @@ def list(event, context):
     }
 
 def _get_username(event):
-    params = event.get('path')
-    return params.get('username')
+    params = event.get('body')
+    return params.get('text')
 
 def _getTable():
     dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
@@ -45,7 +49,7 @@ def _insert(username, table):
 
 def _process_exception(e, username):
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
-        raise
+        return "Something went wrong, please try later"
     else:
         return "Sorry %s it seems you are already in the queue" % username
 
