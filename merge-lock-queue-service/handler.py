@@ -19,8 +19,10 @@ def add(event, context):
 def list(event, context):
     table = _getTable()
     response = table.scan()
+    items = sorted(response['Items'], key=lambda k: k['timestamp']) 
+
     return {
-     "message": response
+     "message": items
     }
 
 def _get_username(event):
