@@ -38,7 +38,7 @@ def _insert(username, table):
                     'username': username,
                     'timestamp': timestamp
                 },
-                ConditionExpression='attribute_not_exists(username)'
+                ConditionExpression = 'attribute_not_exists(username)'
             )
 
 def _process_exception(e, username):
