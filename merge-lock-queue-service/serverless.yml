@@ -62,6 +62,13 @@ functions:
             parameters:
               paths:
                 username: true
+  list:
+    handler: handler.list
+    events:
+      - http:
+          path: mergelock/list
+          method: get
+          integration: lambda
 
 
 #    The following are a few example events you can configure

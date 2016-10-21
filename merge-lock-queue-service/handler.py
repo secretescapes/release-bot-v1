@@ -16,7 +16,12 @@ def add(event, context):
         "message": message
     }
 
-
+def list(event, context):
+    table = _getTable()
+    response = table.scan()
+    return {
+     "message": response
+    }
 
 def _get_username(event):
     params = event.get('path')
