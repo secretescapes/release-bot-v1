@@ -65,6 +65,13 @@ functions:
           path: mergelock/list
           method: get
           integration: lambda
+  remove:
+    handler: handler.remove
+    events:
+      - http:
+          path: mergelock/remove/
+          method: post
+          integration: lambda
 
 
 #    The following are a few example events you can configure

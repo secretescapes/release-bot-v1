@@ -11,7 +11,7 @@ def add(event, context):
             _insert(username, table)
             message = "Hey %s! We have added you to the queue!" % username
         except botocore.exceptions.ClientError as e:
-            message = _process_exception(e, username)
+            message = _process_exception_for_insert(e, username)
     else:
         message = "You must provide a name"
     return {
@@ -28,6 +28,22 @@ def list(event, context):
     return {
      "message": items
     }
+
+def remove(event, context):
+    username = _get_username(event)
+    table = _getTable()
+
+    if username is not None:
+        try:
+            _remove(username, table)
+            message = "Hey %s! We have removed you from the queue!" % username
+        except botocore.exceptions.ClientError as e:
+            message = _process_exception_for_remove(e, username)
+    else:
+        message = "You must provide a name"
+    return {
+            "message": message
+        }
 
 def _get_username(event):
     params = event.get('body')
@@ -47,7 +63,17 @@ def _insert(username, table):
                 ConditionExpression = 'attribute_not_exists(username)'
             )
 
-def _process_exception(e, username):
+def _remove(username, table):
+    response = table.delete_item(
+        Key={
+            'username': username
+        }
+    )
+
+def _process_exception_for_remove(e):
+    return "Something went wrong, please try later"
+    
+def _process_exception_for_insert(e, username):
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
         return "Something went wrong, please try later"
     else:
