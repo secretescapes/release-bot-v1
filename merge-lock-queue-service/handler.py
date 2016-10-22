@@ -23,16 +23,35 @@ def add(event, context):
 def list(event, context):
     table = _getTable()
     response = table.scan()
-    items = sorted(response['Items'], key=lambda k: k['timestamp']) 
+    message = _get_queue()
 
     return {
-     "message": items
+     "message": message
     }
 
 def remove(event, context):
     username = _get_username(event)
     table = _getTable()
+    message = _remove_with_message(username, table)
+    
+    return {
+            "message": message
+        }
 
+def pop(event, context):
+    top_user = _get_top_user()
+    if (top_user):
+        table = _getTable()
+        _remove(top_user, table)
+        message = "%s has been removed from the queue!" % top_user
+    else:
+        message = "Queue is empty!"
+        
+    return {
+            "message": message
+        }
+
+def _remove_with_message(username, table):
     if username is not None:
         try:
             _remove(username, table)
@@ -41,9 +60,19 @@ def remove(event, context):
             message = _process_exception_for_remove(e, username)
     else:
         message = "You must provide a name"
-    return {
-            "message": message
-        }
+    return message
+
+def _get_top_user():
+    queue = _get_queue()
+    if (len(queue) > 0):
+        return queue[0]['username']    
+    else:
+        None
+
+def _get_queue():
+    table = _getTable()
+    response = table.scan()
+    return sorted(response['Items'], key=lambda k: k['timestamp'])
 
 def _get_username(event):
     params = event.get('body')
@@ -64,15 +93,15 @@ def _insert(username, table):
             )
 
 def _remove(username, table):
-    response = table.delete_item(
-        Key={
+    table.delete_item(
+        Key = {
             'username': username
         }
     )
 
 def _process_exception_for_remove(e):
     return "Something went wrong, please try later"
-    
+
 def _process_exception_for_insert(e, username):
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
         return "Something went wrong, please try later"

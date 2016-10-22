@@ -72,6 +72,13 @@ functions:
           path: mergelock/remove/
           method: post
           integration: lambda
+  pop:
+    handler: handler.pop
+    events:
+      - http:
+          path: mergelock/pop
+          method: get
+          integration: lambda
 
 
 #    The following are a few example events you can configure
