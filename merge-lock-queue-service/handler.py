@@ -15,7 +15,7 @@ def add(event, context):
     else:
         message = "You must provide a name"
     return {
-            "message": message
+            "text": message
         }
 
     
@@ -26,7 +26,7 @@ def list(event, context):
     message = _get_queue()
 
     return {
-     "message": message
+     "text": message
     }
 
 def remove(event, context):
@@ -35,7 +35,7 @@ def remove(event, context):
     message = _remove_with_message(username, table)
     
     return {
-            "message": message
+            "text": message
         }
 
 def pop(event, context):
@@ -46,9 +46,9 @@ def pop(event, context):
         message = "%s has been removed from the queue!" % top_user
     else:
         message = "Queue is empty!"
-        
+
     return {
-            "message": message
+            "text": message
         }
 
 def _remove_with_message(username, table):
