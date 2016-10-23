@@ -55,21 +55,19 @@ def pop(event, context):
         }
 
 def dispatcher(event, context):
-    client = boto3.client('lambda')
     for record in event['Records']:
         try:
             eventItem = record['dynamodb']['NewImage']
             if (eventItem['eventType']['S'].upper() == "LIST_REQUEST"):
-                _list_request_handler()
+                _list_request_handler(eventItem['response_url']['S'])
 
         except KeyError as e:
             logger.error("Unrecognized event: %s" % event)
-            logger.err(e)
-
     
     return
 
-def _list_request_handler():
+def _list_request_handler(return_url):
+    client = boto3.client('lambda')
     response = client.invoke(
         #TODO find a way to get the function
         FunctionName='merge-lock-queue-service-dev-list'
@@ -78,7 +76,8 @@ def _list_request_handler():
     item = {
             'timestamp': int(round(time.time() * 1000)),
             'eventType': "LIST_RESPONSE",
-            'payload': response['Payload'].read()
+            'payload': response['Payload'].read(),
+            'return_url': return_url
         }
     _insert(item, table)
 

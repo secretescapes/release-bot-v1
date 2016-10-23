@@ -1,5 +1,14 @@
 {
-  "key3": "value3",
-  "key2": "value2",
-  "key1": "value1"
+  "Records": [{
+  		"dynamodb" : {
+  			"NewImage": {
+  				"timestamp": {
+  					"N": 1235
+				},
+  				"eventType": {
+  					"S": "LIST_RESPONSE"
+				}
+			}
+		}
+	}]
 }
