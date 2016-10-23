@@ -8,11 +8,10 @@ logger.setLevel(logging.INFO)
 
 def add(event, context):
     username = _get_username(event)
-    table = _getTable('merge-lock')
 
     if username is not None:
         try:
-            _insert(username, table)
+            _insert_to_queue(username)
             message = "Hey %s! We have added you to the queue!" % username
         except botocore.exceptions.ClientError as e:
             message = _process_exception_for_insert(e, username)
@@ -61,21 +60,7 @@ def dispatcher(event, context):
         try:
             eventItem = record['dynamodb']['NewImage']
             if (eventItem['eventType']['S'].upper() == "LIST_REQUEST"):
-                response = client.invoke(
-                    #TODO find a way to get the function
-                    FunctionName='merge-lock-queue-service-dev-list'
-                )
-                payload = response['Payload'].read()
-                table = _getTable('events')
-                timestamp = int(round(time.time() * 1000))
-                table.put_item (
-                    Item = {
-                        'timestamp': timestamp,
-                        'eventType': "LIST_RESPONSE",
-                        'payload': payload
-                    }
-                )
-
+                _list_request_handler()
 
         except KeyError as e:
             logger.error("Unrecognized event: %s" % event)
@@ -83,6 +68,19 @@ def dispatcher(event, context):
 
     
     return
+
+def _list_request_handler():
+    response = client.invoke(
+        #TODO find a way to get the function
+        FunctionName='merge-lock-queue-service-dev-list'
+    )
+    table = _getTable('events')
+    item = {
+            'timestamp': int(round(time.time() * 1000)),
+            'eventType': "LIST_RESPONSE",
+            'payload': response['Payload'].read()
+        }
+    _insert(item, table)
 
 def _remove_with_message(username, table):
     if username is not None:
@@ -115,7 +113,8 @@ def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
     return dynamodb.Table(table_name)
 
-def _insert(username, table):
+def _insert_to_queue(username):
+    table = _getTable('merge-lock')
     timestamp = int(round(time.time() * 1000))
     return table.put_item (
                 Item = {
@@ -123,6 +122,11 @@ def _insert(username, table):
                     'timestamp': timestamp
                 },
                 ConditionExpression = 'attribute_not_exists(username)'
+            )
+
+def _insert(item, table):
+    return table.put_item (
+                Item = item
             )
 
 def _remove(username, table):
