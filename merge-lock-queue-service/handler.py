@@ -1,10 +1,14 @@
 import boto3
 import botocore
 import time
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def add(event, context):
     username = _get_username(event)
-    table = _getTable()
+    table = _getTable('merge-lock')
 
     if username is not None:
         try:
@@ -21,7 +25,7 @@ def add(event, context):
     
 
 def list(event, context):
-    table = _getTable()
+    table = _getTable('merge-lock')
     response = table.scan()
     message = _get_queue()
 
@@ -31,7 +35,7 @@ def list(event, context):
 
 def remove(event, context):
     username = _get_username(event)
-    table = _getTable()
+    table = _getTable('merge-lock')
     message = _remove_with_message(username, table)
     
     return {
@@ -41,7 +45,7 @@ def remove(event, context):
 def pop(event, context):
     top_user = _get_top_user()
     if (top_user):
-        table = _getTable()
+        table = _getTable('merge-lock')
         _remove(top_user, table)
         message = "%s has been removed from the queue!" % top_user
     else:
@@ -50,6 +54,35 @@ def pop(event, context):
     return {
             "text": message
         }
+
+def dispatcher(event, context):
+    client = boto3.client('lambda')
+    for record in event['Records']:
+        try:
+            eventItem = record['dynamodb']['NewImage']
+            if (eventItem['eventType']['S'].upper() == "LIST_REQUEST"):
+                response = client.invoke(
+                    #TODO find a way to get the function
+                    FunctionName='merge-lock-queue-service-dev-list'
+                )
+                payload = response['Payload'].read()
+                table = _getTable('events')
+                timestamp = int(round(time.time() * 1000))
+                table.put_item (
+                    Item = {
+                        'timestamp': timestamp,
+                        'eventType': "LIST_RESPONSE",
+                        'payload': payload
+                    }
+                )
+
+
+        except KeyError as e:
+            logger.error("Unrecognized event: %s" % event)
+            logger.err(e)
+
+    
+    return
 
 def _remove_with_message(username, table):
     if username is not None:
@@ -70,7 +103,7 @@ def _get_top_user():
         None
 
 def _get_queue():
-    table = _getTable()
+    table = _getTable('merge-lock')
     response = table.scan()
     return sorted(response['Items'], key=lambda k: k['timestamp'])
 
@@ -78,9 +111,9 @@ def _get_username(event):
     params = event.get('body')
     return params.get('text')
 
-def _getTable():
+def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
-    return dynamodb.Table('merge-lock')
+    return dynamodb.Table(table_name)
 
 def _insert(username, table):
     timestamp = int(round(time.time() * 1000))

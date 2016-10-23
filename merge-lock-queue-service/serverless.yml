@@ -24,6 +24,10 @@ provider:
       Resource: "*"
       Action:
         - "dynamodb:*"
+    - Effect: "Allow"
+      Resource: "*"
+      Action:
+        - "lambda:*"
 
 # you can overwrite defaults here
 #  stage: dev
@@ -49,6 +53,38 @@ provider:
 #  exclude:
 #    - exclude-me.js
 #  artifact: my-service-code.zip
+resources:
+  Resources:
+    userEventsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: username
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: 'merge-lock'
+    eventsDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: timestamp
+            AttributeType: N
+        KeySchema:
+          - AttributeName: timestamp
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+        TableName: 'events'
 
 functions:
   add:
@@ -79,6 +115,11 @@ functions:
           path: mergelock/pop
           method: get
           integration: lambda
+  dispatcher:
+    handler: handler.dispatcher
+    events:
+      #TODO: Find the way to make this dynamic
+      - stream: arn:aws:dynamodb:eu-west-1:015754386147:table/events/stream/2016-10-23T17:25:21.442
 
 
 #    The following are a few example events you can configure
@@ -105,19 +146,3 @@ functions:
 #       Description: "Description for the output"
 #       Value: "Some output value"
 
-resources:
-  Resources:
-    userEventsDynamoDbTable:
-      Type: 'AWS::DynamoDB::Table'
-      DeletionPolicy: Retain
-      Properties:
-        AttributeDefinitions:
-          - AttributeName: username
-            AttributeType: S
-        KeySchema:
-          - AttributeName: username
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
-        TableName: 'merge-lock'
