@@ -66,7 +66,7 @@ def dispatcher(event, context):
     
     return
 
-def _list_request_handler(return_url):
+def _list_request_handler(response_url):
     client = boto3.client('lambda')
     response = client.invoke(
         #TODO find a way to get the function
@@ -77,7 +77,7 @@ def _list_request_handler(return_url):
             'timestamp': int(round(time.time() * 1000)),
             'eventType': "LIST_RESPONSE",
             'payload': response['Payload'].read(),
-            'return_url': return_url
+            'response_url': response_url
         }
     _insert(item, table)
 

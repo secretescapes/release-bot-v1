@@ -2,6 +2,7 @@ import boto3
 import botocore
 import time
 import logging
+import json
 
 import os
 import sys
@@ -14,19 +15,22 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 def dispatcher(event, context):
-    client = boto3.client('lambda')
+    logger.info("Event received by dispatcher: %s" % event)
     for record in event['Records']:
         try:
             eventItem = record['dynamodb']['NewImage']
-            logger.info("MMC1")
             if (eventItem['eventType']['S'].upper() == "LIST_RESPONSE"):
                 response_url = eventItem['response_url']['S']
-                logger.info("MMC")
-                logger.info(response_url)
-                requests.post(response_url, data="{'text': '12524'}")
-
+                payload = eventItem['payload']['S']
+                logger.info("response url: %s" % response_url)
+                logger.info("payload: %s" % payload)
+                response_text = "{'text': %s}" % _process_payload(payload)
+                logger.info("Response body: %s" % response_text)
+                requests.post(response_url, data = response_text)
+            else:
+                pass
         except KeyError as e:
-            logger.error("Unrecognized event: %s" % event)
+            logger.error("Unrecognized key %s" % e)
     
 def merge_lock(event, context):
     params = event.get('body')
@@ -47,6 +51,14 @@ def merge_lock(event, context):
         }
 
 
+def _process_payload(payload):
+    obj = json.loads(payload)
+    output = ""
+    position = 0
+    for item in obj['text']:
+        position += 1
+        output += str(position)+ '. ' +item['username'] + '\n'
+    return "'%s'" % output
 
 def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
