@@ -14,6 +14,8 @@ import requests
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+_sns = boto3.client('sns')
+
 def merge_lock(event, context):
     try:
         params = event.get('body')
@@ -28,8 +30,12 @@ def merge_lock(event, context):
             username = text[1]
             _add_request_handler(response_url, username)
             return {"text": "I will try to add %s to the queue..." % (username)}
+        elif len(text) == 2 and text[0].lower() == 'remove':
+            username = text[1]
+            _remove_request_handler(response_url, username)
+            return {"text": "I will try to remove %s to the queue..." % (username)}
         else:
-            return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]"}
+            return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]"}
     except Exception as e:
         logger.error(e)
         return {"text": "Something went really wrong, sorry"}
@@ -49,31 +55,26 @@ def dispatcher_responses(event, context):
             logger.error("Unrecognized key: %s" % e)
 
 
+def _remove_request_handler(response_url, username):
+    _sns.publish(
+        TopicArn='arn:aws:sns:eu-west-1:015754386147:removeRequest',
+        Message='{"response_url": "%s", "requester":"SLACK_MERGE_LOCK_SERVICE", "username": "%s"}' % (response_url, username),
+        MessageStructure='string'
+    )
+
 def _add_request_handler(response_url, username):
-    _sns = boto3.client('sns')
-    sns_response = _sns.publish(
+    _sns.publish(
         TopicArn='arn:aws:sns:eu-west-1:015754386147:addRequest',
         Message='{"response_url": "%s", "requester":"SLACK_MERGE_LOCK_SERVICE", "username": "%s"}' % (response_url, username),
         MessageStructure='string'
     )
-    logger.info("Sns publish: %s" % sns_response)
 
 def _list_request_handler(response_url):
-    _sns = boto3.client('sns')
-    sns_response = _sns.publish(
+    _sns.publish(
         TopicArn='arn:aws:sns:eu-west-1:015754386147:listQueueRequest',
         Message='{"response_url": "%s", "requester":"SLACK_MERGE_LOCK_SERVICE"}' % response_url,
         MessageStructure='string'
     )
-    logger.info("Sns publish: %s" % sns_response)
-
-# def _process_payload(obj):
-#     output = ""
-#     position = 0
-#     for item in obj['text']:
-#         position += 1
-#         output += str(position)+ '. ' +item['username'] + '\n'
-#     return "'%s'" % output
 
 def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')

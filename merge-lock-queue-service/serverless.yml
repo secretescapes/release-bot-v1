@@ -50,7 +50,6 @@ functions:
     events:
       - sns: addRequest
 
-  
   list:
     handler: handler.list
     events:
@@ -58,7 +57,6 @@ functions:
           path: mergelock/list
           method: get
           integration: lambda
-  
   listDispatcher:
     handler: handler.list_dispatcher
     events:
@@ -71,6 +69,11 @@ functions:
           path: mergelock/remove/
           method: post
           integration: lambda
+  removeDispatcher:
+    handler: handler.remove_dispatcher
+    events:
+      - sns: removeRequest
+
   
   pop:
     handler: handler.pop

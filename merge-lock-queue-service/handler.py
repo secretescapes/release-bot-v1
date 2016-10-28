@@ -93,6 +93,31 @@ def remove(event, context):
             "text": message
         }
 
+def remove_dispatcher(event, context):
+    logger.info("Remove dispatcher invoke with event: %s" % event)
+    for record in event['Records']:
+        try:
+            eventItem = json.loads(record['Sns']['Message'])
+            response_url = eventItem['response_url']
+            requester = eventItem['requester']
+            username = eventItem['username']
+            response = _lambda.invoke(
+                #TODO find a way to get the function
+                FunctionName='merge-lock-queue-service-dev-remove',
+                Payload='{"body": {"username": "%s"}}' % (username)
+            )
+            response_text = json.loads(response['Payload'].read())
+            logger.info("Remove response payload: %s" % response_text)
+            _sns.publish(
+                TopicArn='arn:aws:sns:eu-west-1:015754386147:removeResponse',
+                Message='{"response_url": "%s","requester":"%s","payload": "%s"}' % (response_url, requester, response_text['text']) ,
+                MessageStructure='string'
+            )
+            
+
+        except KeyError as e:
+            logger.error("Unrecognized key: %s" % e)
+
 def pop(event, context):
     top_user = _get_top_user()
     if (top_user):
