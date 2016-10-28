@@ -18,7 +18,7 @@ def add(event, context):
         if username is not None:
             try:
                 _insert_to_queue(username)
-                message = "Hey %s! We have added you to the queue!" % username
+                message = "Hey! We have added %s to the queue!" % username
             except botocore.exceptions.ClientError as e:
                 message = _process_exception_for_insert(e, username)
         else:
@@ -34,22 +34,15 @@ def add_dispatcher(event, context):
     for record in event['Records']:
         try:
             eventItem = json.loads(record['Sns']['Message'])
-            response_url = eventItem['response_url']
-            requester = eventItem['requester']
-            username = eventItem['username']
+            (response_url, requester, username) = _get_params_with_username(eventItem)
             response = _lambda.invoke(
                 #TODO find a way to get the function
                 FunctionName='merge-lock-queue-service-dev-add',
                 Payload='{"body": {"username": "%s"}}' % (username)
             )
             response_text = json.loads(response['Payload'].read())
-            logger.info("Add response payload: %s" % response_text)
-            _sns.publish(
-                TopicArn='arn:aws:sns:eu-west-1:015754386147:addResponse',
-                Message='{"response_url": "%s","requester":"%s","payload": "%s"}' % (response_url, requester, response_text['text']) ,
-                MessageStructure='string'
-            )
-            
+            logger.info("Add response payload: %s" % response_text['text'])
+            _publish('addResponse', (response_url, requester, response_text['text']))            
 
         except KeyError as e:
             logger.error("Unrecognized key: %s" % e)
@@ -74,13 +67,8 @@ def list_dispatcher(event, context):
                 #TODO find a way to get the function
                 FunctionName='merge-lock-queue-service-dev-list'
             )
-            _sns.publish(
-                TopicArn='arn:aws:sns:eu-west-1:015754386147:listQueueResponse',
-                Message='{"response_url": "%s","requester":"%s","payload": "%s"}' % (response_url, requester, _process_payload(response['Payload'].read())) ,
-                MessageStructure='string'
-            )
+            _publish('listQueueResponse', (response_url, requester, _process_payload(response['Payload'].read())))
             
-
         except KeyError as e:
             logger.error("Unrecognized key: %s" % e)
 
@@ -98,9 +86,7 @@ def remove_dispatcher(event, context):
     for record in event['Records']:
         try:
             eventItem = json.loads(record['Sns']['Message'])
-            response_url = eventItem['response_url']
-            requester = eventItem['requester']
-            username = eventItem['username']
+            (response_url, requester, username) = _get_params_with_username(eventItem)
             response = _lambda.invoke(
                 #TODO find a way to get the function
                 FunctionName='merge-lock-queue-service-dev-remove',
@@ -108,13 +94,8 @@ def remove_dispatcher(event, context):
             )
             response_text = json.loads(response['Payload'].read())
             logger.info("Remove response payload: %s" % response_text)
-            _sns.publish(
-                TopicArn='arn:aws:sns:eu-west-1:015754386147:removeResponse',
-                Message='{"response_url": "%s","requester":"%s","payload": "%s"}' % (response_url, requester, response_text['text']) ,
-                MessageStructure='string'
-            )
+            _publish('removeResponse', (response_url, requester, response_text['text']))
             
-
         except KeyError as e:
             logger.error("Unrecognized key: %s" % e)
 
@@ -132,6 +113,12 @@ def pop(event, context):
         }
 
 
+def _publish(topic_name, parameters):
+    _sns.publish(
+        TopicArn='arn:aws:sns:eu-west-1:015754386147:%s' % topic_name,
+        Message='{"response_url": "%s","requester":"%s","payload": "%s"}' % parameters ,
+        MessageStructure='string'
+    )
 
         
 def _remove_with_message(username, table):
@@ -191,6 +178,11 @@ def _remove(username, table):
             'username': username
         }
     )
+
+def _get_params_with_username(item):
+    return (item['response_url'],
+            item['requester'],
+            item['username'])
 
 def _process_payload(string):
     output = ""
