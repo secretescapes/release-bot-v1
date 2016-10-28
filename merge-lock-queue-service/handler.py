@@ -2,6 +2,7 @@ import boto3
 import botocore
 import time
 import logging
+import json
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -32,7 +33,30 @@ def list(event, context):
     }
 
 def list_dispatcher(event, context):
+    _lambda = boto3.client('lambda')
+    _sns = boto3.client('sns')
     logger.info("List dispatcher invoke with event: %s" % event)
+    for record in event['Records']:
+        try:
+            eventItem = json.loads(record['Sns']['Message'])
+            logger.info("Processing event: %s" % eventItem)
+            response_url = eventItem['response_url']
+            requester = eventItem['requester']
+            response = _lambda.invoke(
+                #TODO find a way to get the function
+                FunctionName='merge-lock-queue-service-dev-list'
+            )
+            sns_response = _sns.publish(
+                TopicArn='arn:aws:sns:eu-west-1:015754386147:listQueueResponse',
+                Message='{"response_url": "%s","requester":"%s","payload": %s}' % (response_url, requester, response['Payload'].read()) ,
+                MessageStructure='string'
+            )
+            
+
+        except KeyError as e:
+            logger.error("Unrecognized key: %s" % e)
+    
+    return
 
 def remove(event, context):
     username = _get_username(event)
@@ -55,7 +79,7 @@ def pop(event, context):
     return {
             "text": message
         }
-
+#TODO REMOVE
 def dispatcher(event, context):
     for record in event['Records']:
         try:
@@ -67,7 +91,7 @@ def dispatcher(event, context):
             logger.error("Unrecognized key: %s" % e)
     
     return
-
+#TODO REMOVE
 def _list_request_handler(response_url):
     _lambda = boto3.client('lambda')
     _sns = boto3.client('sns')

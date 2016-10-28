@@ -30,3 +30,7 @@ functions:
           path: slack/merge-lock
           method: post
           integration: lambda
+  dispatcherListResponse:
+    handler: handler.dispatcher_list_response
+    events:
+      - sns: listQueueResponse

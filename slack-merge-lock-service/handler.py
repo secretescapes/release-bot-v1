@@ -40,26 +40,32 @@ def merge_lock(event, context):
         _sns = boto3.client('sns')
         sns_response = _sns.publish(
             TopicArn='arn:aws:sns:eu-west-1:015754386147:listQueueRequest',
-            Message="SNS MESSAGE BODY",
+            Message='{"response_url": "%s", "requester":"SLACK_MERGE_LOCK_SERVICE"}' % response_url,
             MessageStructure='string'
         )
         logger.info("Sns publish: %s" % sns_response)
-        # timestamp = int(round(time.time() * 1000))
-        # item = {
-        #     'timestamp': timestamp,
-        #     'eventType': 'LIST_REQUEST',
-        #     'response_url': response_url
-        # }
-        # table = _getTable('events')
-        # _insert(item, table)
     else:
         return {
             "text": "unrecognized command"
         }
 
+def dispatcher_list_response(event, context):
+    logger.info("List dispatcher invoke with event: %s" % event)
+    for record in event['Records']:
+        try:
+            eventItem = json.loads(record['Sns']['Message'])
+            response_url = eventItem['response_url']
+            requester = eventItem['requester']
+            if requester == "SLACK_MERGE_LOCK_SERVICE":
+                response_text = "{'text': %s}" % _process_payload(eventItem['payload'])
+                logger.info("Response body: %s" % response_text)
+                requests.post(response_url, data = response_text)
+        except KeyError as e:
+            logger.error("Unrecognized key: %s" % e)
 
-def _process_payload(payload):
-    obj = json.loads(payload)
+
+def _process_payload(obj):
+    # obj = json.loads(payload)
     output = ""
     position = 0
     for item in obj['text']:
