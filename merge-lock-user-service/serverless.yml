@@ -15,9 +15,12 @@ provider:
 
 functions:
   create:
-    handler: handler.create
+    handler: handler.update
     events:
-      - http: PUT user-service/user
+      - http:
+          path: user-service/user
+          method: PUT
+
   listAll:
     handler: handler.list_all
     events:
@@ -25,7 +28,8 @@ functions:
   list:
     handler: handler.list
     events:
-      - http: 
+      - http:
+          integration: lambda 
           path: user-service/user/{username}
           method: GET
           request:
@@ -36,6 +40,7 @@ functions:
     handler: handler.delete
     events:
       - http: 
+          integration: lambda
           path: user-service/user/{username}
           method: DELETE
           request:
