@@ -32,7 +32,7 @@ def list(event, context):
     }
 
 def list_dispatcher(event, context):
-    logger.debug("List dispatcher invoke with event: %s" % event)
+    logger.info("List dispatcher invoke with event: %s" % event)
 
 def remove(event, context):
     username = _get_username(event)
