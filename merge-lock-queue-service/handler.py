@@ -79,33 +79,10 @@ def pop(event, context):
     return {
             "text": message
         }
-#TODO REMOVE
-def dispatcher(event, context):
-    for record in event['Records']:
-        try:
-            eventItem = record['dynamodb']['NewImage']
-            if (eventItem['eventType']['S'].upper() == "LIST_REQUEST"):
-                _list_request_handler(eventItem['response_url']['S'])
 
-        except KeyError as e:
-            logger.error("Unrecognized key: %s" % e)
-    
-    return
-#TODO REMOVE
-def _list_request_handler(response_url):
-    _lambda = boto3.client('lambda')
-    _sns = boto3.client('sns')
-    response = _lambda.invoke(
-        #TODO find a way to get the function
-        FunctionName='merge-lock-queue-service-dev-list'
-    )
-    sns_response = _sns.publish(
-        TopicArn='arn:aws:sns:eu-west-1:015754386147:dispatch',
-        Message=response['Payload'].read(),
-        MessageStructure='string'
-    )
-    logger.info("Sns Response: %s" % sns_response)
 
+
+        
 def _remove_with_message(username, table):
     if username is not None:
         try:
