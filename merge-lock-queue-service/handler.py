@@ -7,6 +7,9 @@ import json
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+_lambda = boto3.client('lambda')
+_sns = boto3.client('sns')
+
 def add(event, context):
     try:
         logger.info("Add dispatcher invoke with event: %s" % event)
@@ -26,10 +29,7 @@ def add(event, context):
     except Exception as e:
         logger.error(e)
 
-def add_dispatcher(event, context):
-    #Try to put this globally
-    _lambda = boto3.client('lambda')
-    _sns = boto3.client('sns')
+def add_dispatcher(event, context):    
     logger.info("Add dispatcher invoke with event: %s" % event)
     for record in event['Records']:
         try:
@@ -64,8 +64,6 @@ def list(event, context):
 
 def list_dispatcher(event, context):
     logger.info("List dispatcher invoke with event: %s" % event)
-    _lambda = boto3.client('lambda')
-    _sns = boto3.client('sns')
     for record in event['Records']:
         try:
             eventItem = json.loads(record['Sns']['Message'])

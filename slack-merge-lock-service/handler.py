@@ -29,7 +29,7 @@ def merge_lock(event, context):
             _add_request_handler(response_url, username)
             return {"text": "I will try to add %s to the queue..." % (username)}
         else:
-            return {"text": "unrecognized command"}
+            return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]"}
     except Exception as e:
         logger.error(e)
         return {"text": "Something went really wrong, sorry"}
@@ -38,7 +38,6 @@ def dispatcher_responses(event, context):
     logger.info("List dispatcher invoke with event: %s" % event)
     for record in event['Records']:
         try:
-            logger.info("DECODE THIS: %s" % record['Sns']['Message'])
             eventItem = json.loads(record['Sns']['Message'])
             response_url = eventItem['response_url']
             requester = eventItem['requester']
