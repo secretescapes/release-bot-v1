@@ -8,21 +8,51 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 def add(event, context):
-    username = _get_username(event)
+    try:
+        logger.info("Add dispatcher invoke with event: %s" % event)
+        username = _get_username(event)
 
-    if username is not None:
+        if username is not None:
+            try:
+                _insert_to_queue(username)
+                message = "Hey %s! We have added you to the queue!" % username
+            except botocore.exceptions.ClientError as e:
+                message = _process_exception_for_insert(e, username)
+        else:
+            message = "You must provide a name"
+        return {
+                "text": message
+            }
+    except Exception as e:
+        logger.error(e)
+
+def add_dispatcher(event, context):
+    #Try to put this globally
+    _lambda = boto3.client('lambda')
+    _sns = boto3.client('sns')
+    logger.info("Add dispatcher invoke with event: %s" % event)
+    for record in event['Records']:
         try:
-            _insert_to_queue(username)
-            message = "Hey %s! We have added you to the queue!" % username
-        except botocore.exceptions.ClientError as e:
-            message = _process_exception_for_insert(e, username)
-    else:
-        message = "You must provide a name"
-    return {
-            "text": message
-        }
+            eventItem = json.loads(record['Sns']['Message'])
+            response_url = eventItem['response_url']
+            requester = eventItem['requester']
+            username = eventItem['username']
+            response = _lambda.invoke(
+                #TODO find a way to get the function
+                FunctionName='merge-lock-queue-service-dev-add',
+                Payload='{"body": {"username": "%s"}}' % (username)
+            )
+            response_text = json.loads(response['Payload'].read())
+            logger.info("Add response payload: %s" % response_text)
+            _sns.publish(
+                TopicArn='arn:aws:sns:eu-west-1:015754386147:addResponse',
+                Message='{"response_url": "%s","requester":"%s","payload": "%s"}' % (response_url, requester, response_text['text']) ,
+                MessageStructure='string'
+            )
+            
 
-    
+        except KeyError as e:
+            logger.error("Unrecognized key: %s" % e)
 
 def list(event, context):
     table = _getTable('merge-lock')
@@ -33,9 +63,9 @@ def list(event, context):
     }
 
 def list_dispatcher(event, context):
+    logger.info("List dispatcher invoke with event: %s" % event)
     _lambda = boto3.client('lambda')
     _sns = boto3.client('sns')
-    logger.info("List dispatcher invoke with event: %s" % event)
     for record in event['Records']:
         try:
             eventItem = json.loads(record['Sns']['Message'])
@@ -46,17 +76,15 @@ def list_dispatcher(event, context):
                 #TODO find a way to get the function
                 FunctionName='merge-lock-queue-service-dev-list'
             )
-            sns_response = _sns.publish(
+            _sns.publish(
                 TopicArn='arn:aws:sns:eu-west-1:015754386147:listQueueResponse',
-                Message='{"response_url": "%s","requester":"%s","payload": %s}' % (response_url, requester, response['Payload'].read()) ,
+                Message='{"response_url": "%s","requester":"%s","payload": "%s"}' % (response_url, requester, _process_payload(response['Payload'].read())) ,
                 MessageStructure='string'
             )
             
 
         except KeyError as e:
             logger.error("Unrecognized key: %s" % e)
-    
-    return
 
 def remove(event, context):
     username = _get_username(event)
@@ -107,8 +135,12 @@ def _get_queue():
     return sorted(response['Items'], key=lambda k: k['timestamp'])
 
 def _get_username(event):
-    params = event.get('body')
-    return params.get('text')
+    try:
+        params = event.get('body')
+        return params.get('username')
+    except KeyError as e:
+        logger.error("Unknown key %s" %s)
+    
 
 def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
@@ -136,6 +168,17 @@ def _remove(username, table):
             'username': username
         }
     )
+
+def _process_payload(string):
+    output = ""
+    position = 0
+    obj = json.loads(string)
+    logger.info("obj: %s" % obj)
+    logger.info("obj['text']: %s" % obj['text'])
+    for item in obj['text']:
+        position += 1
+        output += "%d. %s " % (position, item['username'])
+    return "%s" % output
 
 def _process_exception_for_remove(e):
     return "Something went wrong, please try later"

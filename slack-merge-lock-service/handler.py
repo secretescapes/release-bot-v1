@@ -19,28 +19,45 @@ def merge_lock(event, context):
         params = event.get('body')
         response_url = params.get('response_url')
         text = params.get('text').split()
+        logger.info("Command received: %s" % text)
+
         if len(text) == 1 and text[0].lower() == 'list':
             _list_request_handler(response_url)
-            return {"text": "I am grabbing the info for you, just hang on a little bit"}
+            return {"text": "I am grabbing the info for you, just hang on a little bit..."}
+        elif len(text) == 2 and text[0].lower() == 'add':
+            username = text[1]
+            _add_request_handler(response_url, username)
+            return {"text": "I will try to add %s to the queue..." % (username)}
         else:
             return {"text": "unrecognized command"}
-    except:
+    except Exception as e:
+        logger.error(e)
         return {"text": "Something went really wrong, sorry"}
 
-def dispatcher_list_response(event, context):
+def dispatcher_responses(event, context):
     logger.info("List dispatcher invoke with event: %s" % event)
     for record in event['Records']:
         try:
+            logger.info("DECODE THIS: %s" % record['Sns']['Message'])
             eventItem = json.loads(record['Sns']['Message'])
             response_url = eventItem['response_url']
             requester = eventItem['requester']
             if requester == "SLACK_MERGE_LOCK_SERVICE":
-                response_text = "{'text': %s}" % _process_payload(eventItem['payload'])
+                response_text = "{'text': '%s'}" % eventItem['payload']
                 logger.info("Response body: %s" % response_text)
                 requests.post(response_url, data = response_text)
         except KeyError as e:
             logger.error("Unrecognized key: %s" % e)
 
+
+def _add_request_handler(response_url, username):
+    _sns = boto3.client('sns')
+    sns_response = _sns.publish(
+        TopicArn='arn:aws:sns:eu-west-1:015754386147:addRequest',
+        Message='{"response_url": "%s", "requester":"SLACK_MERGE_LOCK_SERVICE", "username": "%s"}' % (response_url, username),
+        MessageStructure='string'
+    )
+    logger.info("Sns publish: %s" % sns_response)
 
 def _list_request_handler(response_url):
     _sns = boto3.client('sns')
@@ -51,13 +68,13 @@ def _list_request_handler(response_url):
     )
     logger.info("Sns publish: %s" % sns_response)
 
-def _process_payload(obj):
-    output = ""
-    position = 0
-    for item in obj['text']:
-        position += 1
-        output += str(position)+ '. ' +item['username'] + '\n'
-    return "'%s'" % output
+# def _process_payload(obj):
+#     output = ""
+#     position = 0
+#     for item in obj['text']:
+#         position += 1
+#         output += str(position)+ '. ' +item['username'] + '\n'
+#     return "'%s'" % output
 
 def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')

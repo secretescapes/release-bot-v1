@@ -45,6 +45,11 @@ functions:
           path: mergelock/add/
           method: post
           integration: lambda
+  addDispatcher:
+    handler: handler.add_dispatcher
+    events:
+      - sns: addRequest
+
   
   list:
     handler: handler.list
