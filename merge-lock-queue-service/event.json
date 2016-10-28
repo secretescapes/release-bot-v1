@@ -7,6 +7,9 @@
 				},
   				"eventType": {
   					"S": "LIST_REQUEST"
+				},
+				"response_url": {
+  					"S": "response_url_content"
 				}
 			}
 		}

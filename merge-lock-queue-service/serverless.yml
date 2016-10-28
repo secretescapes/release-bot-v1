@@ -28,6 +28,10 @@ provider:
       Resource: "*"
       Action:
         - "lambda:*"
+    - Effect: "Allow"
+      Resource: "*"
+      Action:
+        - "sns:*"
 
 # you can overwrite defaults here
 #  stage: dev
