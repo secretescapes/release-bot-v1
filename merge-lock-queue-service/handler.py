@@ -27,10 +27,12 @@ def list(event, context):
     table = _getTable('merge-lock')
     response = table.scan()
     message = _get_queue()
-
     return {
-     "text": message
+        "text": message
     }
+
+def list_dispatcher(event, context):
+    logger.debug("List dispatcher invoke with event: %s" % event)
 
 def remove(event, context):
     username = _get_username(event)

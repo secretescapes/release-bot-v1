@@ -98,6 +98,7 @@ functions:
           path: mergelock/add/
           method: post
           integration: lambda
+  
   list:
     handler: handler.list
     events:
@@ -105,6 +106,12 @@ functions:
           path: mergelock/list
           method: get
           integration: lambda
+  
+  listDispatcher:
+    handler: handler.list_dispatcher
+    events:
+      - sns: listQueueRequest
+
   remove:
     handler: handler.remove
     events:
@@ -112,6 +119,7 @@ functions:
           path: mergelock/remove/
           method: post
           integration: lambda
+  
   pop:
     handler: handler.pop
     events:
@@ -119,6 +127,7 @@ functions:
           path: mergelock/pop
           method: get
           integration: lambda
+  
   dispatcher:
     handler: handler.dispatcher
     events:

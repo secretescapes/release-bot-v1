@@ -11,14 +11,18 @@ provider:
       Resource: "*"
       Action:
         - "dynamodb:*"
+    - Effect: "Allow"
+      Resource: "*"
+      Action:
+        - "sns:*"
 
 functions:
-  dispatcher:
-    handler: handler.dispatcher
-    events:
-      #TODO: Find the way to make this dynamic
-      - stream: arn:aws:dynamodb:eu-west-1:015754386147:table/events/stream/2016-10-23T17:25:21.442
-      - sns: dispatch
+  # dispatcher:
+  #   handler: handler.dispatcher
+  #   events:
+  #     #TODO: Find the way to make this dynamic
+  #     - stream: arn:aws:dynamodb:eu-west-1:015754386147:table/events/stream/2016-10-23T17:25:21.442
+  #     - sns: dispatch
   mergeLock:
     handler: handler.merge_lock
     events:

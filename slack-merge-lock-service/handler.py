@@ -14,8 +14,8 @@ import requests
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-def dispatcher(event, context):
-    logger.info("Event received by dispatcher: %s" % event)
+# def dispatcher(event, context):
+#     logger.info("Event received by dispatcher: %s" % event)
     # for record in event['Records']:
     #     try:
     #         eventItem = record['dynamodb']['NewImage']
@@ -37,14 +37,21 @@ def merge_lock(event, context):
     response_url = params.get('response_url')
     text = params.get('text').split()
     if len(text) == 1 and text[0].lower() == 'list':
-        timestamp = int(round(time.time() * 1000))
-        item = {
-            'timestamp': timestamp,
-            'eventType': 'LIST_REQUEST',
-            'response_url': response_url
-        }
-        table = _getTable('events')
-        _insert(item, table)
+        _sns = boto3.client('sns')
+        sns_response = _sns.publish(
+            TopicArn='arn:aws:sns:eu-west-1:015754386147:listQueueRequest',
+            Message="SNS MESSAGE BODY",
+            MessageStructure='string'
+        )
+        logger.info("Sns publish: %s" % sns_response)
+        # timestamp = int(round(time.time() * 1000))
+        # item = {
+        #     'timestamp': timestamp,
+        #     'eventType': 'LIST_REQUEST',
+        #     'response_url': response_url
+        # }
+        # table = _getTable('events')
+        # _insert(item, table)
     else:
         return {
             "text": "unrecognized command"
