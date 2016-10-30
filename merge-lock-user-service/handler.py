@@ -1,6 +1,7 @@
 import json
 import boto3
 import logging
+from boto3.dynamodb.conditions import Key
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -43,11 +44,12 @@ def list_all(event, context):
     return response['Items']
 
 def list(event, context):
-    
-    return {
-        "message": "List",
-        "event": event
-    }
+    username = _getUsernameFromPath(event)
+    table = _getTable('users')
+    response = table.query(
+        KeyConditionExpression=Key('username').eq(username)
+    )
+    return response['Items']
     
 def delete(event, context):
     return {
@@ -60,6 +62,9 @@ def _getTable(table_name):
 
 def _getParameters(body):
     return (body['username'], body['githubUsername'])
+
+def _getUsernameFromPath(event):
+    return event['path']['username']
 
 def _insert(item, table):
     return table.put_item (
