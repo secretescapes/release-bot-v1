@@ -38,10 +38,9 @@ def update(event, context):
    
 
 def list_all(event, context):
-    return {
-        "message": "List all",
-        "event": event
-    }
+    table = _getTable('users')
+    response = table.scan()
+    return response['Items']
 
 def list(event, context):
     

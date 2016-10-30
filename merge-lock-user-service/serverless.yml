@@ -25,7 +25,10 @@ functions:
   listAll:
     handler: handler.list_all
     events:
-      - http: GET user-service/user
+      - http:
+          path: user-service/user
+          method: GET
+          integration: lambda
   list:
     handler: handler.list
     events:

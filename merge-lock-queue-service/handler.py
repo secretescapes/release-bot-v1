@@ -49,7 +49,6 @@ def add_dispatcher(event, context):
 
 def list(event, context):
     table = _getTable('merge-lock')
-    response = table.scan()
     message = _get_queue()
     return {
         "text": message
