@@ -20,6 +20,7 @@ functions:
       - http:
           path: user-service/user
           method: PUT
+          integration: lambda
 
   listAll:
     handler: handler.list_all

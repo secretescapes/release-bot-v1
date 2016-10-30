@@ -32,14 +32,8 @@ def update(event, context):
     except KeyError as key:
         logger.error("Missing key: %s" % key)
         return {
-            "statusCode": 500,
-            "errorMsg": "Error processing request"
-        }
-    except Exception as e:
-        logger.error("Exception: %s" % e)
-        return {
-            "statusCode": 500,
-            "errorMsg": "Error processing request"
+            "statusCode": 400,
+            "errorMsg": "Malformed Request"
         }
    
 
