@@ -1,7 +1,7 @@
 import json
 import boto3
 import logging
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -44,11 +44,17 @@ def list_all(event, context):
     return response['Items']
 
 def list(event, context):
-    username = _getUsernameFromPath(event)
+    (username, _type) = _getUsernameAndTypeFromPath(event)
+    logger.info("List with username: %s type: %s" % (username, _type))
     table = _getTable('users')
-    response = table.query(
-        KeyConditionExpression=Key('username').eq(username)
-    )
+    if _type == 'reverse':
+        response = table.scan(
+            FilterExpression = Attr('githubUsername').eq(username)
+        )
+    else:
+        response = table.query(
+            KeyConditionExpression=Key('username').eq(username)
+        )
     return response['Items']
     
 def delete(event, context):
@@ -63,8 +69,8 @@ def _getTable(table_name):
 def _getParameters(body):
     return (body['username'], body['githubUsername'])
 
-def _getUsernameFromPath(event):
-    return event['path']['username']
+def _getUsernameAndTypeFromPath(event):
+    return (event['path']['username'], event['path'].get('type', ''))
 
 def _insert(item, table):
     return table.put_item (

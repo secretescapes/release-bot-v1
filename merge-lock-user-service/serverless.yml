@@ -34,12 +34,13 @@ functions:
     events:
       - http:
           integration: lambda 
-          path: user-service/user/{username}
+          path: user-service/user/{username}/{type}
           method: GET
           request:
             parameters:
               paths:
                 username: true
+                type: false
   delete:
     handler: handler.delete
     events:
