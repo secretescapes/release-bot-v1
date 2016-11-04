@@ -39,22 +39,6 @@ def merge_lock(event, context):
         logger.error(e)
         return {"text": "Something went really wrong, sorry"}
 
-#TODO Remove
-def dispatcher_responses(event, context):
-    logger.info("List dispatcher invoke with event: %s" % event)
-    for record in event['Records']:
-        try:
-            eventItem = json.loads(record['Sns']['Message'])
-            response_url = eventItem['response_url']
-            requester = eventItem['requester']
-            if requester == "SLACK_MERGE_LOCK_SERVICE":
-                response_text = "{'text': '%s'}" % eventItem['payload']
-                logger.info("Response body: %s" % response_text)
-                requests.post(response_url, data = response_text)
-        except KeyError as e:
-            logger.error("Unrecognized key: %s" % e)
-
-
 def _remove_request_handler(response_url, username):
     #TODO: HARDCODED URL!!
     response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/remove", data={'username': username})
@@ -83,12 +67,12 @@ def _list_request_handler():
     #TODO: HARDCODED URL!!
     response = requests.get("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/list")
     if response.status_code == 200:
-        return _format_list_response(response.json())
+        return _format_successful_list_response(response.json())
     else:
         logger.error("Status code receive: %i" % response.status_code)
         return {'text': 'Something went wrong, please try again'}
 
-def _format_list_response(json):
+def _format_successful_list_response(json):
     i = 1
     text = 'Here is the current status of the queue:\n'
     for item in json:
@@ -97,4 +81,7 @@ def _format_list_response(json):
         else:
             text += "%d. %s\n" % (i, item['username'])
         i+= 1
+    
+    if i == 1:
+        text = 'The queue is currently empty!'
     return text
