@@ -11,14 +11,6 @@ provider:
       Resource: "*"
       Action:
         - "dynamodb:*"
-    - Effect: "Allow"
-      Resource: "*"
-      Action:
-        - "lambda:*"
-    - Effect: "Allow"
-      Resource: "*"
-      Action:
-        - "sns:*"
 
 resources:
   Resources:
@@ -61,10 +53,6 @@ functions:
           path: mergelock/remove/
           method: post
           integration: lambda
-  removeDispatcher:
-    handler: handler.remove_dispatcher
-    events:
-      - sns: removeRequest
 
   
   pop:

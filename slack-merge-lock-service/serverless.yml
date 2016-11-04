@@ -6,6 +6,7 @@ provider:
   runtime: python2.7
   stage: dev
   region: eu-west-1
+  # TODO Remove
   iamRoleStatements:
     - Effect: "Allow"
       Resource: "*"
@@ -20,6 +21,7 @@ functions:
           path: slack/merge-lock
           method: post
           integration: lambda
+  # TODO remove
   dispatcherResponses:
     handler: handler.dispatcher_responses
     events:

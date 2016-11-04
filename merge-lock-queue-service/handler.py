@@ -7,9 +7,6 @@ import json
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-_lambda = boto3.client('lambda')
-_sns = boto3.client('sns')
-
 def add(event, context):
     try:
         logger.info("Add dispatcher invoke with event: %s" % event)
@@ -24,28 +21,9 @@ def add(event, context):
         else:
             message = "You must provide a name"
         return message
-        
+
     except Exception as e:
         logger.error(e)
-
-#TODO: this must be removed
-def add_dispatcher(event, context):    
-    logger.info("Add dispatcher invoke with event: %s" % event)
-    for record in event['Records']:
-        try:
-            eventItem = json.loads(record['Sns']['Message'])
-            (response_url, requester, username) = _get_params_with_username(eventItem)
-            response = _lambda.invoke(
-                #TODO find a way to get the function
-                FunctionName='merge-lock-queue-service-dev-add',
-                Payload='{"body": {"username": "%s"}}' % (username)
-            )
-            response_text = json.loads(response['Payload'].read())
-            logger.info("Add response payload: %s" % response_text['text'])
-            _publish('addResponse', (response_url, requester, response_text['text']))            
-
-        except KeyError as e:
-            logger.error("Unrecognized key: %s" % e)
 
 def list(event, context):
     return _get_queue()
@@ -53,30 +31,7 @@ def list(event, context):
 def remove(event, context):
     username = _get_username(event)
     table = _getTable('merge-lock')
-    message = _remove_with_message(username, table)
-    
-    return {
-            "text": message
-        }
-
-#TODO: this must be removed
-def remove_dispatcher(event, context):
-    logger.info("Remove dispatcher invoke with event: %s" % event)
-    for record in event['Records']:
-        try:
-            eventItem = json.loads(record['Sns']['Message'])
-            (response_url, requester, username) = _get_params_with_username(eventItem)
-            response = _lambda.invoke(
-                #TODO find a way to get the function
-                FunctionName='merge-lock-queue-service-dev-remove',
-                Payload='{"body": {"username": "%s"}}' % (username)
-            )
-            response_text = json.loads(response['Payload'].read())
-            logger.info("Remove response payload: %s" % response_text)
-            _publish('removeResponse', (response_url, requester, response_text['text']))
-            
-        except KeyError as e:
-            logger.error("Unrecognized key: %s" % e)
+    return _remove_with_message(username, table)
 
 def pop(event, context):
     top_user = _get_top_user()
@@ -91,13 +46,6 @@ def pop(event, context):
             "text": message
         }
 
-
-def _publish(topic_name, parameters):
-    _sns.publish(
-        TopicArn='arn:aws:sns:eu-west-1:015754386147:%s' % topic_name,
-        Message='{"response_url": "%s","requester":"%s","payload": "%s"}' % parameters ,
-        MessageStructure='string'
-    )
 
         
 def _remove_with_message(username, table):
@@ -162,17 +110,6 @@ def _get_params_with_username(item):
     return (item['response_url'],
             item['requester'],
             item['username'])
-
-def _process_payload(string):
-    output = ""
-    position = 0
-    obj = json.loads(string)
-    logger.info("obj: %s" % obj)
-    logger.info("obj['text']: %s" % obj['text'])
-    for item in obj['text']:
-        position += 1
-        output += "%d. %s " % (position, item['username'])
-    return "%s" % output
 
 def _process_exception_for_remove(e):
     return "Something went wrong, please try later"

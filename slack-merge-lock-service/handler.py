@@ -29,17 +29,17 @@ def merge_lock(event, context):
         elif len(text) == 2 and text[0].lower() == 'add':
             username = text[1]
             return {"text":_add_request_handler(username)}
-            
+
         elif len(text) == 2 and text[0].lower() == 'remove':
             username = text[1]
-            _remove_request_handler(response_url, username)
-            return {"text": "I will try to remove %s to the queue..." % (username)}
+            return {"text":_remove_request_handler(response_url, username)}
         else:
             return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]"}
     except Exception as e:
         logger.error(e)
         return {"text": "Something went really wrong, sorry"}
 
+#TODO Remove
 def dispatcher_responses(event, context):
     logger.info("List dispatcher invoke with event: %s" % event)
     for record in event['Records']:
@@ -56,11 +56,16 @@ def dispatcher_responses(event, context):
 
 
 def _remove_request_handler(response_url, username):
-    _sns.publish(
-        TopicArn='arn:aws:sns:eu-west-1:015754386147:removeRequest',
-        Message='{"response_url": "%s", "requester":"SLACK_MERGE_LOCK_SERVICE", "username": "%s"}' % (response_url, username),
-        MessageStructure='string'
-    )
+    #TODO: HARDCODED URL!!
+    response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/remove", data={'username': username})
+    if response.status_code == 200:
+        logger.info("Received: %s" % response.text)
+        return response.text
+    else:
+        logger.error("Status code receive: %i" % response.status_code)   
+        return {'text': 'Something went wrong, please try again'}
+
+    return response.text
 
 def _add_request_handler(username):
     #TODO: HARDCODED URL!!
@@ -93,12 +98,3 @@ def _format_list_response(json):
             text += "%d. %s\n" % (i, item['username'])
         i+= 1
     return text
-
-def _getTable(table_name):
-    dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
-    return dynamodb.Table(table_name)
-
-def _insert(item, table):
-    return table.put_item (
-                Item = item
-            )
