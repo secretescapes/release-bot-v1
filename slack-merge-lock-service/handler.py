@@ -24,12 +24,12 @@ def merge_lock(event, context):
         logger.info("Command received: %s" % text)
 
         if len(text) == 1 and text[0].lower() == 'list':
-            return {"text":_list_request_handler(response_url)}
-            # return {"text": "I am grabbing the info for you, just hang on a little bit..."}
+            return {"text":_list_request_handler()}
+
         elif len(text) == 2 and text[0].lower() == 'add':
             username = text[1]
-            _add_request_handler(response_url, username)
-            return {"text": "I will try to add %s to the queue..." % (username)}
+            return {"text":_add_request_handler(username)}
+            
         elif len(text) == 2 and text[0].lower() == 'remove':
             username = text[1]
             _remove_request_handler(response_url, username)
@@ -62,19 +62,25 @@ def _remove_request_handler(response_url, username):
         MessageStructure='string'
     )
 
-def _add_request_handler(response_url, username):
-    _sns.publish(
-        TopicArn='arn:aws:sns:eu-west-1:015754386147:addRequest',
-        Message='{"response_url": "%s", "requester":"SLACK_MERGE_LOCK_SERVICE", "username": "%s"}' % (response_url, username),
-        MessageStructure='string'
-    )
+def _add_request_handler(username):
+    #TODO: HARDCODED URL!!
+    response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/add", data={'username': username})
+    if response.status_code == 200:
+        logger.info("Received: %s" % response.text)
+        return response.text
+    else:
+        logger.error("Status code receive: %i" % response.status_code)   
+        return {'text': 'Something went wrong, please try again'}
 
-def _list_request_handler(response_url):
+    return response.text
+
+def _list_request_handler():
     #TODO: HARDCODED URL!!
     response = requests.get("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/list")
     if response.status_code == 200:
         return _format_list_response(response.json())
     else:
+        logger.error("Status code receive: %i" % response.status_code)
         return {'text': 'Something went wrong, please try again'}
 
 def _format_list_response(json):

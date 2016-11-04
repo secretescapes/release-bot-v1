@@ -23,9 +23,8 @@ def add(event, context):
                 message = _process_exception_for_insert(e, username)
         else:
             message = "You must provide a name"
-        return {
-                "text": message
-            }
+        return message
+        
     except Exception as e:
         logger.error(e)
 
