@@ -24,8 +24,8 @@ def merge_lock(event, context):
         logger.info("Command received: %s" % text)
 
         if len(text) == 1 and text[0].lower() == 'list':
-            _list_request_handler(response_url)
-            return {"text": "I am grabbing the info for you, just hang on a little bit..."}
+            return {"text":_list_request_handler(response_url)}
+            # return {"text": "I am grabbing the info for you, just hang on a little bit..."}
         elif len(text) == 2 and text[0].lower() == 'add':
             username = text[1]
             _add_request_handler(response_url, username)
@@ -70,11 +70,23 @@ def _add_request_handler(response_url, username):
     )
 
 def _list_request_handler(response_url):
-    _sns.publish(
-        TopicArn='arn:aws:sns:eu-west-1:015754386147:listQueueRequest',
-        Message='{"response_url": "%s", "requester":"SLACK_MERGE_LOCK_SERVICE"}' % response_url,
-        MessageStructure='string'
-    )
+    #TODO: HARDCODED URL!!
+    response = requests.get("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/list")
+    if response.status_code == 200:
+        return _format_list_response(response.json())
+    else:
+        return {'text': 'Something went wrong, please try again'}
+
+def _format_list_response(json):
+    i = 1
+    text = 'Here is the current status of the queue:\n'
+    for item in json:
+        if i == 1:
+            text += "*%d. %s*\n" % (i, item['username'])
+        else:
+            text += "%d. %s\n" % (i, item['username'])
+        i+= 1
+    return text
 
 def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')

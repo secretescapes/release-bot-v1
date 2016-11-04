@@ -57,10 +57,6 @@ functions:
           path: mergelock/list
           method: get
           integration: lambda
-  listDispatcher:
-    handler: handler.list_dispatcher
-    events:
-      - sns: listQueueRequest
 
   remove:
     handler: handler.remove

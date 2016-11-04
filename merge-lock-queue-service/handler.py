@@ -29,6 +29,7 @@ def add(event, context):
     except Exception as e:
         logger.error(e)
 
+#TODO: this must be removed
 def add_dispatcher(event, context):    
     logger.info("Add dispatcher invoke with event: %s" % event)
     for record in event['Records']:
@@ -48,28 +49,7 @@ def add_dispatcher(event, context):
             logger.error("Unrecognized key: %s" % e)
 
 def list(event, context):
-    table = _getTable('merge-lock')
-    message = _get_queue()
-    return {
-        "text": message
-    }
-
-def list_dispatcher(event, context):
-    logger.info("List dispatcher invoke with event: %s" % event)
-    for record in event['Records']:
-        try:
-            eventItem = json.loads(record['Sns']['Message'])
-            logger.info("Processing event: %s" % eventItem)
-            response_url = eventItem['response_url']
-            requester = eventItem['requester']
-            response = _lambda.invoke(
-                #TODO find a way to get the function
-                FunctionName='merge-lock-queue-service-dev-list'
-            )
-            _publish('listQueueResponse', (response_url, requester, _process_payload(response['Payload'].read())))
-            
-        except KeyError as e:
-            logger.error("Unrecognized key: %s" % e)
+    return _get_queue()
 
 def remove(event, context):
     username = _get_username(event)
@@ -80,6 +60,7 @@ def remove(event, context):
             "text": message
         }
 
+#TODO: this must be removed
 def remove_dispatcher(event, context):
     logger.info("Remove dispatcher invoke with event: %s" % event)
     for record in event['Records']:
