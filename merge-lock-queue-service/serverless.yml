@@ -50,7 +50,6 @@ functions:
       - http:
           path: mergelock/remove/
           method: post
-          integration: lambda
 
   
   pop:

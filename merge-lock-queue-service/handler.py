@@ -64,9 +64,35 @@ def list(event, context):
     
 
 def remove(event, context):
-    username = _get_username(event)
-    table = _getTable('merge-lock')
-    return _remove_with_message(username, table)
+    logger.info("Remove invoke with event: %s" % event)
+    try:
+        username = _getParameters(event['body'])
+    except Exception as e:
+        logger.error(e)
+        return {
+            "statusCode": 400,
+            "body": '{"error":"You must provide a username"}'
+        }
+    if username is not None:
+        try:
+            username = _getParameters(event['body'])
+            table = _getTable('merge-lock')
+            _remove(username, table)
+            return {
+                "statusCode": 200
+            }
+
+        except Exception as e:
+            return _process_exception_for_remove(e)
+    else:
+        return {
+            "statusCode": 400,
+            "body": '{"error":"You must provide a username"}'
+        }
+
+
+
+    
 
 def pop(event, context):
     top_user = _get_top_user()
@@ -80,19 +106,6 @@ def pop(event, context):
     return {
             "text": message
         }
-
-
-        
-def _remove_with_message(username, table):
-    if username is not None:
-        try:
-            _remove(username, table)
-            message = "Hey %s! We have removed you from the queue!" % username
-        except botocore.exceptions.ClientError as e:
-            message = _process_exception_for_remove(e, username)
-    else:
-        message = "You must provide a name"
-    return message
 
 def _get_top_user():
     queue = _get_queue()
@@ -146,13 +159,11 @@ def _getParameters(body):
     parsed = urlparse.parse_qs(body)
     return parsed['username'][0]
 
-def _get_params_with_username(item):
-    return (item['response_url'],
-            item['requester'],
-            item['username'])
-
 def _process_exception_for_remove(e):
-    return "Something went wrong, please try later"
+    return {
+        "statusCode": 500,
+        "body": '{"error": "Unexpected Error"}'
+    }
 
 def _process_exception_for_insert(e, username):
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':

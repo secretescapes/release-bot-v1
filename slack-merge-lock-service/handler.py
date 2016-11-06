@@ -43,11 +43,10 @@ def _remove_request_handler(response_url, username):
     #TODO: HARDCODED URL!!
     response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/remove", data={'username': username})
     if response.status_code == 200:
-        logger.info("Received: %s" % response.text)
-        return response.text
+        return '%s has been *removed* to the queue' % username
     else:
         logger.error("Status code receive: %i" % response.status_code)   
-        return {'text': 'Something went wrong, please try again'}
+        return 'Something went wrong, please try again'
 
     return response.text
 
@@ -56,9 +55,9 @@ def _add_request_handler(username):
     response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/add", data={'username': username})
     logger.info ("Status code: %d" % response.status_code)
     if response.status_code == 200:
-        return '%s has been added to the queue' % username
+        return '%s has been *added* to the queue' % username
     elif response.status_code == 401:
-        return '%s was already in the queue' % username
+        return '%s *was already* in the queue' % username
     else:
         logger.error("Status code receive: %i" % response.status_code)   
         return 'Something went wrong, please try again'
