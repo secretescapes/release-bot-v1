@@ -43,7 +43,9 @@ def _remove_request_handler(response_url, username):
     #TODO: HARDCODED URL!!
     response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/remove", data={'username': username})
     if response.status_code == 200:
-        return '%s has been *removed* to the queue' % username
+        return '%s has been *removed* from the queue' % username
+    elif response.status_code == 401:
+        return '%s is not in the queue' % username
     else:
         logger.error("Status code receive: %i" % response.status_code)   
         return 'Something went wrong, please try again'

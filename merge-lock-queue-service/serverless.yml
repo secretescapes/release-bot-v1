@@ -51,12 +51,10 @@ functions:
           path: mergelock/remove/
           method: post
 
-  
   pop:
     handler: handler.pop
     events:
       - http:
           path: mergelock/pop
           method: get
-          integration: lambda
 

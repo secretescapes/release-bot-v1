@@ -61,7 +61,6 @@ def list(event, context):
             "statusCode": 500,
             "body": '{"error":"Unexpected Error"}'
         }
-    
 
 def remove(event, context):
     logger.info("Remove invoke with event: %s" % event)
@@ -83,28 +82,32 @@ def remove(event, context):
             }
 
         except Exception as e:
-            return _process_exception_for_remove(e)
+            return _process_exception_for_remove(e, username)
     else:
         return {
             "statusCode": 400,
             "body": '{"error":"You must provide a username"}'
         }
 
-
-
-    
-
 def pop(event, context):
-    top_user = _get_top_user()
-    if (top_user):
-        table = _getTable('merge-lock')
-        _remove(top_user, table)
-        message = "%s has been removed from the queue!" % top_user
-    else:
-        message = "Queue is empty!"
-
-    return {
-            "text": message
+    try:
+        top_user = _get_top_user()
+        if (top_user):
+            table = _getTable('merge-lock')
+            _remove(top_user, table)
+            return {
+                "statusCode": 200,
+                "body": '{"user": "%s"}' % top_user
+            }
+        else:
+            return {
+                "statusCode": 200
+            }
+    except Exception as e:
+        logger.error(e)
+        return {
+            "statusCode": 500,
+            "body": '{"error":"Unexpected Error"}'
         }
 
 def _get_top_user():
@@ -152,18 +155,25 @@ def _remove(username, table):
     table.delete_item(
         Key = {
             'username': username
-        }
+        },
+        ConditionExpression = 'attribute_exists(username)'
     )
 
 def _getParameters(body):
     parsed = urlparse.parse_qs(body)
     return parsed['username'][0]
 
-def _process_exception_for_remove(e):
-    return {
-        "statusCode": 500,
-        "body": '{"error": "Unexpected Error"}'
-    }
+def _process_exception_for_remove(e, username):
+    if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
+        return {
+            "statusCode": 500,
+            "body": '{"error": "Unexpected Error"}'
+        }
+    else:
+        return {
+            "statusCode": 401,
+            "body": '{"error": "User %s was not in the queue"}' % username
+        }
 
 def _process_exception_for_insert(e, username):
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
@@ -174,7 +184,7 @@ def _process_exception_for_insert(e, username):
     else:
         return {
             "statusCode": 401,
-            "body": '{"error": "User already in the queue"}'
+            "body": '{"error": "User %s already in the queue"}' % username
         }
 
     
