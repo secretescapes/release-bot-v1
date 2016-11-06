@@ -36,7 +36,6 @@ functions:
       - http:
           path: mergelock/add/
           method: post
-          integration: lambda
 
   list:
     handler: handler.list

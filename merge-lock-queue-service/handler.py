@@ -26,7 +26,18 @@ def add(event, context):
         logger.error(e)
 
 def list(event, context):
-    return _get_queue()
+    try:
+        return {
+            "statusCode": 200,
+            "body": _get_queue()
+        }
+    except Exception as e:
+        logger.error('Exception: %s' % e)
+        return {
+            "statusCode": 500,
+            "body": {"error":"Unexpected error"}
+        }
+    
 
 def remove(event, context):
     username = _get_username(event)

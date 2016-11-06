@@ -67,9 +67,10 @@ def _list_request_handler():
     #TODO: HARDCODED URL!!
     response = requests.get("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/list")
     if response.status_code == 200:
-        return _format_successful_list_response(response.json())
+        return _format_successful_list_response(response.json()['body'])
     else:
-        logger.error("Status code receive: %i" % response.status_code)
+        logger.error("Status code received: %i" % response.status_code)
+        logger.error("Error received: %i" % response.json()['body'])
         return {'text': 'Something went wrong, please try again'}
 
 def _format_successful_list_response(json):
