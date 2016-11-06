@@ -3,39 +3,63 @@ import botocore
 import time
 import logging
 import json
+import urlparse
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+from decimal import Decimal
+
+def default(obj):
+    if isinstance(obj, Decimal):
+        return str(obj)
+    raise TypeError
+
 def add(event, context):
     try:
-        logger.info("Add dispatcher invoke with event: %s" % event)
-        username = _get_username(event)
+        logger.info("Add invoke with event: %s" % event)
+        try:
+            username = _getParameters(event['body'])
+        except Exception as e:
+            logger.error(e)
+            return {
+                "statusCode": 400,
+                "body": '{"error":"You must provide a username"}'
+            }
 
         if username is not None:
             try:
                 _insert_to_queue(username)
-                message = "Hey! We have added %s to the queue!" % username
+                return {
+                    "statusCode": 200
+                }
+
             except botocore.exceptions.ClientError as e:
-                message = _process_exception_for_insert(e, username)
+                return _process_exception_for_insert(e, username)
         else:
-            message = "You must provide a name"
-        return message
+            return {
+                "statusCode": 400,
+                "body": '{"error":"You must provide a username"}'
+            }
 
     except Exception as e:
         logger.error(e)
+        return {
+            "statusCode": 500,
+            "body": '{"error": "Unexpected error"}'
+        }
 
 def list(event, context):
     try:
         return {
             "statusCode": 200,
-            "body": _get_queue()
+            "body": '{"queue": %s}' % json.dumps(_get_queue(), default=default)
         }
     except Exception as e:
         logger.error('Exception: %s' % e)
         return {
             "statusCode": 500,
-            "body": {"error":"Unexpected error"}
+            "body": '{"error":"Unexpected Error"}'
         }
     
 
@@ -80,12 +104,13 @@ def _get_top_user():
 def _get_queue():
     table = _getTable('merge-lock')
     response = table.scan()
+    logger.info("Response: %s" % response)
     return sorted(response['Items'], key=lambda k: k['timestamp'])
 
 def _get_username(event):
     try:
-        params = event.get('body')
-        return params.get('username')
+        params = event['body']
+        return params['username']
     except KeyError as e:
         logger.error("Unknown key %s" %s)
     
@@ -117,6 +142,10 @@ def _remove(username, table):
         }
     )
 
+def _getParameters(body):
+    parsed = urlparse.parse_qs(body)
+    return parsed['username'][0]
+
 def _get_params_with_username(item):
     return (item['response_url'],
             item['requester'],
@@ -127,8 +156,14 @@ def _process_exception_for_remove(e):
 
 def _process_exception_for_insert(e, username):
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
-        return "Something went wrong, please try later"
+        return {
+            "statusCode": 500,
+            "body": '{"error": "Unexpected Error"}'
+        }
     else:
-        return "Sorry %s it seems you are already in the queue" % username
+        return {
+            "statusCode": 401,
+            "body": '{"error": "User already in the queue"}'
+        }
 
     

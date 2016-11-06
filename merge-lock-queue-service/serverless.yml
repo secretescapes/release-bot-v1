@@ -43,7 +43,6 @@ functions:
       - http:
           path: mergelock/list
           method: get
-          integration: lambda
 
   remove:
     handler: handler.remove
