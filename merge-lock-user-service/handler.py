@@ -56,10 +56,16 @@ def list(event, context):
     response = table.query(
         KeyConditionExpression=Key('username').eq(username)
     )
-    return {
-            "statusCode": 200,
-            "body": json.dumps(response['Items'])
-        }
+    if (response['Items']):
+        return {
+                "statusCode": 200,
+                "body": json.dumps(response['Items'])
+            }
+    else:
+        return {
+                "statusCode": 400
+            }
+
 
 def reverseList(event, context):
     logger.info("Reverse List invoked with event: %s" % event)
