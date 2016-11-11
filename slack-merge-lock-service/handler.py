@@ -14,8 +14,6 @@ import requests
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-_sns = boto3.client('sns')
-
 def merge_lock(event, context):
     try:
         params = event.get('body')
