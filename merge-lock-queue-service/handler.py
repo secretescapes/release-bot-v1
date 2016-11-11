@@ -99,7 +99,11 @@ def remove(event, context):
 
 def pop(event, context):
     try:
+        username = event['pathParameters']['username']
         top_user = _get_top_user()
+        if not username or username != top_user:
+            return _responseError(400, "The user provided must be at the top of the queue")
+        
         if (top_user):
             table = _getTable('merge-lock')
             _remove(top_user, table)
@@ -113,10 +117,7 @@ def pop(event, context):
             }
     except Exception as e:
         logger.error(e)
-        return {
-            "statusCode": 500,
-            "body": '{"error":"Unexpected Error"}'
-        }
+        return _responseError(500, "Unexpected Error")
 
 def _responseError(status_code, error_msg):
     return {

@@ -55,6 +55,6 @@ functions:
     handler: handler.pop
     events:
       - http:
-          path: mergelock/pop
+          path: mergelock/pop/{username}
           method: get
 
