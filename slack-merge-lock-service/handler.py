@@ -32,14 +32,27 @@ def merge_lock(event, context):
 
         elif len(text) == 2 and text[0].lower() == 'remove':
             username = text[1]
-            return {"text":_remove_request_handler(response_url, username)}
+            return {"text":_remove_request_handler(username)}
+        elif len(text) == 3 and text[0].lower() == 'register':    
+            username = text[1]
+            githubUsername = text[2]
+            return {"text":_register_request_handler(username, githubUsername)}
         else:
-            return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]"}
+            return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock register [username] [github username]"}
     except Exception as e:
         logger.error(e)
         return {"text": "Something went really wrong, sorry"}
 
-def _remove_request_handler(response_url, username):
+def _register_request_handler(username, githubUsername):
+    #TODO: HARDCODED URL!!
+    response = requests.put("https://r9mnwy3vfi.execute-api.eu-west-1.amazonaws.com/dev/user-service/user", data={'username': username, 'githubUsername':githubUsername})
+    if response.status_code == 200:
+        return '%s has been *registered* with the github username %s' % (username, githubUsername)
+    else:   
+        logger.error("Status code receive: %i" % response.status_code)   
+        return 'Something went wrong, please try again'
+
+def _remove_request_handler(username):
     #TODO: HARDCODED URL!!
     response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/remove", data={'username': username})
     if response.status_code == 200:
