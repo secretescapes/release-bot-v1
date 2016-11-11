@@ -4,11 +4,19 @@ import time
 import logging
 import json
 import urlparse
+from decimal import Decimal
+import os
+import sys
+
+
+here = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(here, './vendored'))
+import requests
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-from decimal import Decimal
+
 
 def default(obj):
     if isinstance(obj, Decimal):
@@ -22,12 +30,15 @@ def add(event, context):
             username = _getParameters(event['body'])
         except Exception as e:
             logger.error(e)
-            return {
-                "statusCode": 400,
-                "body": '{"error":"You must provide a username"}'
-            }
+            return _responseError(400, "You must provide a username")
 
         if username is not None:
+            #TODO: HARDCODED URL
+            response = requests.get("https://r9mnwy3vfi.execute-api.eu-west-1.amazonaws.com/dev/user-service/user/%s" % username)
+            if response.status_code == 400:
+                return _responseError(402, "The user is not registered")
+            elif response.status_code != 200:
+                return _responseError(500, "Unexpected error")
             try:
                 _insert_to_queue(username)
                 return {
@@ -37,10 +48,7 @@ def add(event, context):
             except botocore.exceptions.ClientError as e:
                 return _process_exception_for_insert(e, username)
         else:
-            return {
-                "statusCode": 400,
-                "body": '{"error":"You must provide a username"}'
-            }
+            return _responseError(400, "You must provide a username")
 
     except Exception as e:
         logger.error(e)
@@ -108,6 +116,12 @@ def pop(event, context):
         return {
             "statusCode": 500,
             "body": '{"error":"Unexpected Error"}'
+        }
+
+def _responseError(status_code, error_msg):
+    return {
+            "statusCode": status_code,
+            "body": '{"error": "%s"}' % error_msg
         }
 
 def _get_top_user():
