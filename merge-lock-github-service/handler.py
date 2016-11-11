@@ -1,0 +1,39 @@
+import json
+import logging
+import os
+import sys
+
+
+here = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(here, './vendored'))
+import requests
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+def push(event, context):
+    try:
+        params = json.loads(event.get('body'))
+        branch_name = params['ref']
+        author_username = params['pusher']['name']
+        logger.info("Push invoked for branch %s, by author %s" % (branch_name, author_username))
+
+        if branch_name == 'refs/heads/master':
+            #TODO: Hardcoded url
+            response = requests.get("https://r9mnwy3vfi.execute-api.eu-west-1.amazonaws.com/dev/user-service/user/reverse/%s" % author_username)
+            if response.status_code == 200:
+                user = response.json()[0]
+                #TODO: Hardcoded url
+                response = requests.get("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/pop/%s" % user['username'])
+                if response.status_code == 400:
+                    logger.info("[%s:%s] was not at the top of the queue" % (author_username, username))
+                elif response.status_code == 200:
+                    logger.info("[%s:%s] was at the top of the queue and has been removed" % (author_username, username))
+        return {
+            "statusCode": 200
+        }
+    except Exception as e:
+        logging.exception(e)
+        return {
+            "statusCode": 500
+        }

@@ -74,10 +74,15 @@ def reverseList(event, context):
     response = table.scan(
         FilterExpression = Attr('githubUsername').eq(username)
     )
-    return {
-        "statusCode": 200,
-        "body": json.dumps(response['Items'])
-    }
+    if (response['Items']):
+        return {
+                "statusCode": 200,
+                "body": json.dumps(response['Items'])
+            }
+    else:
+        return {
+                "statusCode": 400
+            }
     
 def delete(event, context):
     logger.info("Delete invoked with event: %s" % event)

@@ -17,7 +17,6 @@ logger.setLevel(logging.INFO)
 def merge_lock(event, context):
     try:
         params = event.get('body')
-        response_url = params.get('response_url')
         text = params.get('text').split()
         logger.info("Command received: %s" % text)
 

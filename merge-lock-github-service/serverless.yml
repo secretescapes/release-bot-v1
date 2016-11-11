@@ -1,0 +1,17 @@
+service: merge-lock-github-service
+
+provider:
+  profile: ml-serverless
+  name: aws
+  runtime: python2.7
+  stage: dev
+  region: eu-west-1
+
+
+functions:
+  push:
+    handler: handler.push
+    events:
+      - http:
+          path: github/push
+          method: post

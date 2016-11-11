@@ -100,7 +100,9 @@ def remove(event, context):
 def pop(event, context):
     try:
         username = event['pathParameters']['username']
+        logger.info("Pop invoked with username: %s" % username)
         top_user = _get_top_user()
+        logger.info("Top user is %s" %top_user)
         if not username or username != top_user:
             return _responseError(400, "The user provided must be at the top of the queue")
         
