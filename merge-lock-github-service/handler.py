@@ -22,9 +22,9 @@ def push(event, context):
             #TODO: Hardcoded url
             response = requests.get("https://r9mnwy3vfi.execute-api.eu-west-1.amazonaws.com/dev/user-service/user/reverse/%s" % author_username)
             if response.status_code == 200:
-                user = response.json()[0]
+                username = response.json()[0]['username']
                 #TODO: Hardcoded url
-                response = requests.get("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/pop/%s" % user['username'])
+                response = requests.get("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/pop/%s" % username)
                 if response.status_code == 400:
                     logger.info("[%s:%s] was not at the top of the queue" % (author_username, username))
                 elif response.status_code == 200:
