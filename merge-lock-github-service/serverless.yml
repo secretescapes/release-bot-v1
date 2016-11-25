@@ -7,6 +7,12 @@ provider:
   stage: dev
   region: eu-west-1
 
+custom:
+  writeEnvVars:
+    STAGE: ${opt:stage}
+plugins:
+  - serverless-plugin-write-env-vars
+
 
 functions:
   push:

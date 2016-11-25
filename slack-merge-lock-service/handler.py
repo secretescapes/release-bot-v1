@@ -7,12 +7,21 @@ import json
 import os
 import sys
 
+
+
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(here, "./vendored"))
+
+from dotenv import load_dotenv
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
 import requests
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+stage = os.environ.get("STAGE")
 
 def merge_lock(event, context):
     try:
@@ -43,7 +52,7 @@ def merge_lock(event, context):
 
 def _register_request_handler(username, githubUsername):
     #TODO: HARDCODED URL!!
-    response = requests.put("https://r9mnwy3vfi.execute-api.eu-west-1.amazonaws.com/dev/user-service/user", data={'username': username, 'githubUsername':githubUsername})
+    response = requests.put("https://r9mnwy3vfi.execute-api.eu-west-1.amazonaws.com/%s/user-service/user" % stage, data={'username': username, 'githubUsername':githubUsername})
     if response.status_code == 200:
         return '%s has been *registered* with the github username %s' % (username, githubUsername)
     else:   
@@ -52,7 +61,7 @@ def _register_request_handler(username, githubUsername):
 
 def _remove_request_handler(username):
     #TODO: HARDCODED URL!!
-    response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/remove", data={'username': username})
+    response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/%s/mergelock/remove" % stage, data={'username': username})
     if response.status_code == 200:
         return '%s has been *removed* from the queue' % username
     elif response.status_code == 401:
@@ -65,7 +74,7 @@ def _remove_request_handler(username):
 
 def _add_request_handler(username):
     #TODO: HARDCODED URL!!
-    response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/add", data={'username': username})
+    response = requests.post("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/%s/mergelock/add" % stage, data={'username': username})
     logger.info ("Status code: %d" % response.status_code)
     if response.status_code == 200:
         return '%s has been *added* to the queue' % username
@@ -77,7 +86,7 @@ def _add_request_handler(username):
 
 def _list_request_handler():
     #TODO: HARDCODED URL!!
-    response = requests.get("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/dev/mergelock/list")
+    response = requests.get("https://5ywhqv93l9.execute-api.eu-west-1.amazonaws.com/%s/mergelock/list" % stage)
     if response.status_code == 200:
         return _format_successful_list_response(response.json()['queue'])
     else:

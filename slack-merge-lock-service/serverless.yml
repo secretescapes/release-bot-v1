@@ -6,7 +6,12 @@ provider:
   runtime: python2.7
   stage: dev
   region: eu-west-1
+custom:
+  writeEnvVars:
+    STAGE: ${opt:stage}
 
+plugins:
+  - serverless-plugin-write-env-vars
 functions:
   mergeLock:
     handler: handler.merge_lock
