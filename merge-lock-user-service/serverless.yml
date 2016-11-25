@@ -10,7 +10,10 @@ provider:
     - Effect: "Allow"
       Resource: "*"
       Action:
-        - "dynamodb:*"
+        - "dynamodb:PutItem"
+        - "dynamodb:DeleteItem"
+        - "dynamodb:Scan"
+        - "dynamodb:Query"
 
 
 functions:
