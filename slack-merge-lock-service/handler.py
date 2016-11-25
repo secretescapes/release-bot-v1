@@ -17,6 +17,7 @@ logger.setLevel(logging.INFO)
 def merge_lock(event, context):
     try:
         params = event.get('body')
+        _validate(params['token'])
         text = params.get('text').split()
         logger.info("Command received: %s" % text)
 
@@ -38,7 +39,7 @@ def merge_lock(event, context):
             return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock register [username] [github username]"}
     except Exception as e:
         logger.error(e)
-        return {"text": "Something went really wrong, sorry"}
+        return {"text": ":dizzy_face: Something went really wrong, sorry"}
 
 def _register_request_handler(username, githubUsername):
     #TODO: HARDCODED URL!!
@@ -97,3 +98,7 @@ def _format_successful_list_response(json):
     if i == 1:
         text = 'The queue is currently empty!'
     return text
+
+def _validate(token):
+    if (token != os.environ['SLACK_TOKEN']):
+        raise Exception("Incorrect token")
