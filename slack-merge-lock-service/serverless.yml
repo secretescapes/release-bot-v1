@@ -9,6 +9,8 @@ provider:
 custom:
   writeEnvVars:
     STAGE: ${opt:stage}
+    DEV_USER_SERVICE_API_ID: r9mnwy3vfi
+    DEV_QUEUE_SERVICE_API_ID: 5ywhqv93l9
 
 plugins:
   - serverless-plugin-write-env-vars
