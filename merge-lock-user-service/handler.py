@@ -2,10 +2,22 @@ import json
 import boto3
 import logging
 import urlparse
+import os
+import sys
 from boto3.dynamodb.conditions import Key, Attr
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+here = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(here, './vendored'))
+
+from dotenv import load_dotenv
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+stage = os.environ.get("STAGE")
+
 
 _client = boto3.client('dynamodb')
 _dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
@@ -98,7 +110,7 @@ def delete(event, context):
     }
 
 def _getTable(table_name):
-    return _dynamodb.Table(table_name)
+    return _dynamodb.Table("%s-%s"%(table_name, stage))
 
 def _getParameters(body):
     parsed = urlparse.parse_qs(body)

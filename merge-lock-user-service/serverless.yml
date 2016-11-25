@@ -4,7 +4,6 @@ provider:
   profile: ml-serverless
   name: aws
   runtime: python2.7
-  stage: dev
   region: eu-west-1
   iamRoleStatements:
     - Effect: "Allow"
@@ -15,6 +14,11 @@ provider:
         - "dynamodb:Scan"
         - "dynamodb:Query"
 
+custom:
+  writeEnvVars:
+    STAGE: ${opt:stage}
+plugins:
+  - serverless-plugin-write-env-vars
 
 functions:
   update:
@@ -67,6 +71,6 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: 'users'
+        TableName: 'users-${opt:stage}'
 
 

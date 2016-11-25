@@ -12,6 +12,9 @@ custom:
     DEV_USER_SERVICE_API_ID: r9mnwy3vfi
     DEV_QUEUE_SERVICE_API_ID: 5ywhqv93l9
 
+    PROD_USER_SERVICE_API_ID: 74j3rv9sfh
+    PROD_QUEUE_SERVICE_API_ID: 0zg6xc1oz6
+
 plugins:
   - serverless-plugin-write-env-vars
 functions:

@@ -21,6 +21,7 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 stage = os.environ.get("STAGE")
+user_service_api_id = os.environ.get("%s_USER_SERVICE_API_ID" % stage.upper())
 
 def default(obj):
     if isinstance(obj, Decimal):
@@ -37,8 +38,7 @@ def add(event, context):
             return _responseError(400, "You must provide a username")
 
         if username is not None:
-            #TODO: HARDCODED URL
-            response = requests.get("https://r9mnwy3vfi.execute-api.eu-west-1.amazonaws.com/%s/user-service/user/%s" % (stage, username))
+            response = requests.get("https://%s.execute-api.eu-west-1.amazonaws.com/%s/user-service/user/%s" % (user_service_api_id, stage, username))
             if response.status_code == 400:
                 return _responseError(402, "The user is not registered")
             elif response.status_code != 200:
@@ -154,7 +154,7 @@ def _get_username(event):
 
 def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
-    return dynamodb.Table(table_name)
+    return dynamodb.Table("%s-%s" %(table_name, stage))
 
 def _insert_to_queue(username):
     table = _getTable('merge-lock')
