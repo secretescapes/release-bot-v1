@@ -12,6 +12,12 @@ provider:
       Action:
         - "dynamodb:*"
 
+custom:
+  writeEnvVars:
+    STAGE: ${opt:stage}
+plugins:
+  - serverless-plugin-write-env-vars
+
 resources:
   Resources:
     userEventsDynamoDbTable:

@@ -16,7 +16,11 @@ import requests
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+from dotenv import load_dotenv
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
+stage = os.environ.get("STAGE")
 
 def default(obj):
     if isinstance(obj, Decimal):
@@ -34,7 +38,7 @@ def add(event, context):
 
         if username is not None:
             #TODO: HARDCODED URL
-            response = requests.get("https://r9mnwy3vfi.execute-api.eu-west-1.amazonaws.com/dev/user-service/user/%s" % username)
+            response = requests.get("https://r9mnwy3vfi.execute-api.eu-west-1.amazonaws.com/%s/user-service/user/%s" % (stage, username))
             if response.status_code == 400:
                 return _responseError(402, "The user is not registered")
             elif response.status_code != 200:
