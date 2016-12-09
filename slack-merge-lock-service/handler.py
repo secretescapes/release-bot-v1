@@ -24,9 +24,11 @@ logger.setLevel(logging.INFO)
 stage = os.environ.get("STAGE")
 user_service_api_id = os.environ.get("%s_USER_SERVICE_API_ID" % stage.upper())
 queue_service_api_id = os.environ.get("%s_QUEUE_SERVICE_API_ID" % stage.upper())
+unknown_error_message = ":dizzy_face: Something went really wrong, sorry"
 
 def merge_lock(event, context):
     try:
+        logger.info("mergeLock invoke with event: %s" % event)
         params = event.get('body')
         _validate(params['token'])
         text = params.get('text').split()
@@ -50,7 +52,7 @@ def merge_lock(event, context):
             return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock register [username] [github username]"}
     except Exception as e:
         logger.error(e)
-        return {"text": ":dizzy_face: Something went really wrong, sorry"}
+        return {"text": unknown_error_message}
 
 def _register_request_handler(username, githubUsername):
     response = requests.put("https://%s.execute-api.eu-west-1.amazonaws.com/%s/user-service/user" % (user_service_api_id, stage), data={'username': username, 'githubUsername':githubUsername})
@@ -58,7 +60,7 @@ def _register_request_handler(username, githubUsername):
         return '%s has been *registered* with the github username %s' % (username, githubUsername)
     else:   
         logger.error("Status code receive: %i" % response.status_code)   
-        return 'Something went wrong, please try again'
+        return unknown_error_message
 
 def _remove_request_handler(username):
     response = requests.post("https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock/remove" % (queue_service_api_id, stage), data={'username': username})
@@ -68,7 +70,7 @@ def _remove_request_handler(username):
         return '%s is not in the queue' % username
     else:
         logger.error("Status code receive: %i" % response.status_code)   
-        return 'Something went wrong, please try again'
+        return unknown_error_message
 
     return response.text
 
@@ -79,9 +81,11 @@ def _add_request_handler(username):
         return '%s has been *added* to the queue' % username
     elif response.status_code == 401:
         return '%s *was already* in the queue' % username
+    elif response.status_code == 402:
+        return ':warning: %s is not *registered*' % username
     else:
         logger.error("Status code receive: %i" % response.status_code)   
-        return 'Something went wrong, please try again'
+        return unknown_error_message
 
 def _list_request_handler():
     response = requests.get("https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock/list" % (queue_service_api_id, stage))
@@ -90,7 +94,7 @@ def _list_request_handler():
     else:
         logger.error("Status code received: %i" % response.status_code)
         logger.error("Error received: %i" % response.json()['queue'])
-        return {'text': 'Something went wrong, please try again'}
+        return {'text': unknown_error_message}
 
 def _format_successful_list_response(json):
     i = 1
