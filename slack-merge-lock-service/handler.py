@@ -44,15 +44,35 @@ def merge_lock(event, context):
         elif len(text) == 2 and text[0].lower() == 'remove':
             username = text[1]
             return {"text":_remove_request_handler(username)}
+
+        elif len(text) ==   2 and text[0].lower() == 'back':
+            username = text[1]
+            return {"text":_back_request_handler(username)}
+        
         elif len(text) == 3 and text[0].lower() == 'register':    
             username = text[1]
             githubUsername = text[2]
             return {"text":_register_request_handler(username, githubUsername)}
+        
         else:
-            return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock register [username] [github username]"}
+            return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock back [username]\n/lock register [username] [github username]"}
     except Exception as e:
         logger.error(e)
         return {"text": unknown_error_message}
+
+
+def _back_request_handler(username):
+    response = requests.post("https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock/back" % (queue_service_api_id, stage), data={'username': username})
+    if response.status_code == 200:
+        return '%s has been *pulled back* one position in the queue :point_down:' % username
+    elif response.status_code == 401:
+        return '%s is not in the queue' % username
+    elif response.status_code == 402:
+        return '%s is already at the bottom of the queue' % username
+    else:
+        logger.error("Status code receive: %i" % response.status_code)   
+        return unknown_error_message
+
 
 def _register_request_handler(username, githubUsername):
     response = requests.put("https://%s.execute-api.eu-west-1.amazonaws.com/%s/user-service/user" % (user_service_api_id, stage), data={'username': username, 'githubUsername':githubUsername})
@@ -78,7 +98,7 @@ def _add_request_handler(username):
     response = requests.post("https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock/add" % (queue_service_api_id, stage), data={'username': username})
     logger.info ("Status code: %d" % response.status_code)
     if response.status_code == 200:
-        return '%s has been *added* to the queue' % username
+        return '%s has been *added* to the queue :point_right:' % username
     elif response.status_code == 401:
         return '%s *was already* in the queue' % username
     elif response.status_code == 402:

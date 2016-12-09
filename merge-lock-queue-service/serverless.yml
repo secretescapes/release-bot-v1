@@ -70,3 +70,10 @@ functions:
           path: mergelock/pop/{username}
           method: get
 
+  back:
+    handler: handler.back
+    events:
+      - http:
+          path: mergelock/back
+          method: post
+

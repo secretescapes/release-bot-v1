@@ -125,6 +125,48 @@ def pop(event, context):
         logger.error(e)
         return _responseError(500, "Unexpected Error")
 
+def back(event, context):
+    logger.info("Back invoked with event: %s" % event)
+    try:
+        username = _getParameters(event['body'])
+    except Exception as e:
+        logger.error(e)
+        return _responseError(400, "You must provide a username")
+
+    queue = _get_queue()
+    logger.info("Current queue: %s" % queue)
+    
+    try:
+        user_index = next(index for (index, d) in enumerate(queue) if d["username"] == username)
+        logger.info("User Index: %s"% user_index)
+    except StopIteration:
+        logger.info("User %s is not in the queue" % username)
+        return _responseError(401, "The user is not in the queue")
+    except Exception as e:
+        return _responseError(500, "Unknown error")
+
+    next_user_index = user_index+1
+    if (next_user_index == len(queue)):
+        logger.info("User %s is already at the bottom of the queue"% username)
+        return _responseError(402, "User is already at the bottom of the queue")
+
+    user = queue[user_index]
+    next_user = queue[next_user_index]
+    logger.info("Next user timestamp %s" % next_user)
+
+    try:
+        #TODO: This is not quite right as it should be atomic
+        _update_to_queue(user['username'], next_user['timestamp'])
+        _update_to_queue(next_user['username'], user['timestamp'])
+
+    except Exception as e:
+        logger.error("Exception: %s" % e)
+        return _responseError(500, "Unknown error")
+
+    return {
+                "statusCode": 200
+            }
+    
 def _responseError(status_code, error_msg):
     return {
             "statusCode": status_code,
@@ -156,15 +198,27 @@ def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
     return dynamodb.Table("%s-%s" %(table_name, stage))
 
-def _insert_to_queue(username):
+def _insert_to_queue(username, timestamp = None):
+    if (not timestamp):
+        timestamp = int(round(time.time() * 1000))
     table = _getTable('merge-lock')
-    timestamp = int(round(time.time() * 1000))
     return table.put_item (
                 Item = {
                     'username': username,
                     'timestamp': timestamp
                 },
                 ConditionExpression = 'attribute_not_exists(username)'
+            )
+
+def _update_to_queue(username, timestamp = None):
+    if (not timestamp):
+        timestamp = int(round(time.time() * 1000))
+    table = _getTable('merge-lock')
+    return table.put_item (
+                Item = {
+                    'username': username,
+                    'timestamp': timestamp
+                }
             )
 
 def _insert(item, table):
