@@ -6,9 +6,25 @@ provider:
   runtime: python2.7
   stage: dev
   region: eu-west-1
+  iamRoleStatements:
+    - Effect: "Allow"
+      Resource: "*"
+      Action:
+        - "lambda:InvokeFunction"
+
+plugins:
+  - serverless-plugin-write-env-vars
+
+custom:
+  writeEnvVars:
+    LAMBDA_NAME: ${self:service}-${opt:stage}-notifySlack
 
 
 functions:
-  notifySLack:
+  notifySlack:
     handler: handler.notify_slack
+  userAddedListener:
+    handler: handler.user_added_listener
+    events:
+      - sns: ${opt:stage}-user_added_listener
 

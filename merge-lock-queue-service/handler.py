@@ -22,6 +22,9 @@ load_dotenv(dotenv_path)
 
 stage = os.environ.get("STAGE")
 user_service_api_id = os.environ.get("%s_USER_SERVICE_API_ID" % stage.upper())
+ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
+
+sns = boto3.client('sns')
 
 def default(obj):
     if isinstance(obj, Decimal):
@@ -45,6 +48,7 @@ def add(event, context):
                 return _responseError(500, "Unexpected error")
             try:
                 _insert_to_queue(username)
+                _publish_add_user(username)
                 return {
                     "statusCode": 200
                 }
@@ -166,6 +170,16 @@ def back(event, context):
     return {
                 "statusCode": 200
             }
+
+def _publish_add_user(username):
+    logger.info("Publish add user %s" % username)
+    try:
+        payload = {'username': username}
+        response = sns.publish(
+            TopicArn='arn:aws:sns:eu-west-1:%s:%s-user_added_listener' % (ACCOUNT_ID, stage),
+            Message= json.dumps(payload))
+    except Exception as e:
+        logger.error("Exception publishing add event: %s" % e)
     
 def _responseError(status_code, error_msg):
     return {
