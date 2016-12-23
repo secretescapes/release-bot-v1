@@ -173,13 +173,17 @@ def back(event, context):
 
 def _publish_add_user(username):
     logger.info("Publish add user %s" % username)
+    payload = {'username': username, 'queue': json.dumps(_get_queue(), default=default)}
+    _publish(payload, 'user_added_listener')
+
+def _publish(payload, topic):
+    logger.info("Publish message %s in topic %s" % (payload, topic))
     try:
-        payload = {'username': username}
         response = sns.publish(
-            TopicArn='arn:aws:sns:eu-west-1:%s:%s-user_added_listener' % (ACCOUNT_ID, stage),
+            TopicArn='arn:aws:sns:eu-west-1:%s:%s-%s' % (ACCOUNT_ID, stage, topic),
             Message= json.dumps(payload))
     except Exception as e:
-        logger.error("Exception publishing add event: %s" % e)
+        logger.error("Exception publishing in topic %s: %s" % (topic, e))
     
 def _responseError(status_code, error_msg):
     return {
