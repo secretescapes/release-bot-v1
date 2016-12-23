@@ -1,0 +1,14 @@
+service: merge-lock-notification-service
+
+provider:
+  profile: ml-serverless
+  name: aws
+  runtime: python2.7
+  stage: dev
+  region: eu-west-1
+
+
+functions:
+  notifySLack:
+    handler: handler.notify_slack
+
