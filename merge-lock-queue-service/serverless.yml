@@ -44,6 +44,25 @@ resources:
           WriteCapacityUnits: 1
         TableName: 'merge-lock-${opt:stage}'
 
+    statusEventsDynamoDbTable:
+        Type: 'AWS::DynamoDB::Table'
+        DeletionPolicy: Retain
+        Properties:
+          AttributeDefinitions:
+            - AttributeName: hash
+              AttributeType: N
+            - AttributeName: timestamp
+              AttributeType: N
+          KeySchema:
+            - AttributeName: hash
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+          TableName: 'statusEventTemp-${opt:stage}'
+
 functions:
   add:
     handler: handler.add
