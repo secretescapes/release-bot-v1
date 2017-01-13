@@ -114,8 +114,7 @@ def pop(event, context):
             return _responseError(400, "The user provided must be at the top of the queue")
         
         if (top_user):
-            table = _getTable('merge-lock')
-            _remove(top_user, table)
+            _removeAndNotify(top_user)
             return {
                 "statusCode": 200,
                 "body": '{"user": "%s"}' % top_user
