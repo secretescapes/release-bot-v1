@@ -157,9 +157,7 @@ def back(event, context):
     logger.info("Next user timestamp %s" % next_user)
 
     try:
-        #TODO: This is not quite right as it should be atomic
-        _update_to_queue(user['username'], next_user['timestamp'])
-        _update_to_queue(next_user['username'], user['timestamp'])
+        _swapAndNotify(user, next_user)
 
     except Exception as e:
         logger.error("Exception: %s" % e)
@@ -169,6 +167,26 @@ def back(event, context):
                 "statusCode": 200
             }
 
+
+def _swapAndNotify(user_1, user_2):
+    logger.info("swap and notify %s and %s" % (user_1, user_2))
+    try:
+        previous_snapshot = _get_queue()
+    except Exception as e:
+        logger.error("Exception taking snapshot of the queue before removing")
+
+    #TODO: This is not quite right as it should be atomic
+    _update_to_queue(user_1['username'], user_2['timestamp'])
+    _update_to_queue(user_2['username'], user_1['timestamp'])
+
+    try:
+        current_snapshot = _get_queue()
+        if len(current_snapshot) > 0 and previous_snapshot[0] != current_snapshot[0]:
+            logger.info("user at the top has changed, notify")
+            _publish_new_top()
+
+    except Exception as e:
+        logger.error("Exception taking snapshot of the queue after removing")
 
 def _removeAndNotify(username):
     logger.info("remove and notify %s" % username)
