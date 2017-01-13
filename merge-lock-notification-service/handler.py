@@ -53,7 +53,20 @@ def user_added_listener(event, context):
         FunctionName=NOTIFY_SLACK_LAMBDA_NAME,
         InvocationType='Event',
         Payload=json.dumps(payload))
-    return
+
+def new_top_listener(event, context):
+    logger.info("New Top Listener invoked with event: %s" % event)
+    received_data = json.loads(event['Records'][0]['Sns']['Message'])
+    queue = json.loads(received_data['queue'])
+    if (len(queue) == 0):
+        logger.warn("New Top Listener invoked with empty queue")
+        return
+
+    payload = {'text': "*%s*, you have aquired the merge lock!\n%s" % (queue[0]['username'], _format_successful_list_response(queue))}
+    response = _lambda.invoke(
+        FunctionName=NOTIFY_SLACK_LAMBDA_NAME,
+        InvocationType='Event',
+        Payload=json.dumps(payload))
 
 
 def _format_successful_list_response(json):

@@ -27,4 +27,8 @@ functions:
     handler: handler.user_added_listener
     events:
       - sns: ${opt:stage}-user_added_listener
+  newTopListener:
+    handler: handler.new_top_listener
+    events:
+      - sns: ${opt:stage}-new_top_listener
 

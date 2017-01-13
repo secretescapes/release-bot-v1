@@ -91,8 +91,7 @@ def remove(event, context):
     if username is not None:
         try:
             username = _getParameters(event['body'])
-            table = _getTable('merge-lock')
-            _remove(username, table)
+            _removeAndNotify(username)
             return {
                 "statusCode": 200
             }
@@ -170,6 +169,32 @@ def back(event, context):
     return {
                 "statusCode": 200
             }
+
+
+def _removeAndNotify(username):
+    logger.info("remove and notify %s" % username)
+    try:
+        previous_snapshot = _get_queue()
+    except Exception as e:
+        logger.error("Exception taking snapshot of the queue before removing")
+
+    table = _getTable('merge-lock')
+    _remove(username, table)
+
+    try:
+        current_snapshot = _get_queue()
+        if len(current_snapshot) > 0 and previous_snapshot[0] != current_snapshot[0]:
+            logger.info("user at the top has changed, notify")
+            _publish_new_top()
+
+    except Exception as e:
+        logger.error("Exception taking snapshot of the queue after removing")        
+
+
+def _publish_new_top():
+    logger.info("Publish new user at top")
+    payload = {'queue': json.dumps(_get_queue(), default=default)}
+    _publish(payload, 'new_top_listener')
 
 def _publish_add_user(username):
     logger.info("Publish add user %s" % username)
