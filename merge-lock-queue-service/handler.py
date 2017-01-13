@@ -111,6 +111,7 @@ def pop(event, context):
         top_user = _get_top_user()
         logger.info("Top user is %s" %top_user)
         if not username or username != top_user:
+            _publish_unauthorized_push(username)
             return _responseError(400, "The user provided must be at the top of the queue")
         
         if (top_user):
@@ -207,6 +208,11 @@ def _removeAndNotify(username):
     except Exception as e:
         logger.error("Exception taking snapshot of the queue after removing")        
 
+
+def _publish_unauthorized_push(username):
+    logger.info("Publish unauthorized push")
+    payload = {'username': username, 'queue': json.dumps(_get_queue(), default=default)}
+    _publish(payload, 'unauthorized_push_listener')
 
 def _publish_new_top():
     logger.info("Publish new user at top")

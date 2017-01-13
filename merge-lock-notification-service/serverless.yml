@@ -31,4 +31,8 @@ functions:
     handler: handler.new_top_listener
     events:
       - sns: ${opt:stage}-new_top_listener
+  unauthorizedPushListener:
+    handler: handler.unauthorized_push_listener
+    events:
+      - sns: ${opt:stage}-unauthorized_push_listener
 

@@ -38,28 +38,34 @@ def merge_lock(event, context):
             return {"text":_list_request_handler()}
 
         elif len(text) == 2 and text[0].lower() == 'add':
-            username = text[1]
+            username = _resolve_username(text[1], params.get('user_name'))
             return {"text":_add_request_handler(username)}
 
         elif len(text) == 2 and text[0].lower() == 'remove':
-            username = text[1]
+            username = _resolve_username(text[1], params.get('user_name'))
             return {"text":_remove_request_handler(username)}
 
         elif len(text) ==   2 and text[0].lower() == 'back':
-            username = text[1]
+            username = _resolve_username(text[1], params.get('user_name'))
             return {"text":_back_request_handler(username)}
         
-        elif len(text) == 3 and text[0].lower() == 'register':    
-            username = text[1]
+        elif len(text) == 3 and text[0].lower() == 'register':
+            username = _resolve_username(text[1], params.get('user_name'))
             githubUsername = text[2]
             return {"text":_register_request_handler(username, githubUsername)}
         
         else:
-            return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock back [username]\n/lock register [username] [github username]"}
+            return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock back [username]\n/lock register me [github username]\n(tip: you can use _me_ instead of your username)"}
     except Exception as e:
-        logger.error(e)
+        logger.error("Exception: %s" % e)
         return {"text": unknown_error_message}
 
+
+def _resolve_username(command_username, requester_username):
+    if command_username.lower() == 'me':
+        return requester_username
+    else:
+        return command_username
 
 def _back_request_handler(username):
     response = requests.post("https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock/back" % (queue_service_api_id, stage), data={'username': username})

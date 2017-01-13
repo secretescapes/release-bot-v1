@@ -62,7 +62,20 @@ def new_top_listener(event, context):
         logger.warn("New Top Listener invoked with empty queue")
         return
 
-    payload = {'text': "*%s*, you have aquired the merge lock!\n%s" % (queue[0]['username'], _format_successful_list_response(queue))}
+    payload = {'text': ":bell:*%s*, you have aquired the merge lock!:bell:\n%s" % (queue[0]['username'], _format_successful_list_response(queue))}
+    response = _lambda.invoke(
+        FunctionName=NOTIFY_SLACK_LAMBDA_NAME,
+        InvocationType='Event',
+        Payload=json.dumps(payload))
+
+def unauthorized_push_listener(event, context):
+    logger.info("Unauthorized push invoked with event: %s" % event)
+
+    received_data = json.loads(event['Records'][0]['Sns']['Message'])
+    queue = json.loads(received_data['queue'])
+
+    payload = {'text': ":rotating_light:*%s* has merged without merge lock:rotating_light:\n%s" % 
+                    (received_data['username'],_format_successful_list_response(queue))}
     response = _lambda.invoke(
         FunctionName=NOTIFY_SLACK_LAMBDA_NAME,
         InvocationType='Event',
