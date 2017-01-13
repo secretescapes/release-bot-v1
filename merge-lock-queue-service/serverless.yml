@@ -13,6 +13,7 @@ provider:
         - "dynamodb:PutItem"
         - "dynamodb:DeleteItem"
         - "dynamodb:Scan"
+        - "dynamodb:Query"
         - "sns:*"
 
 custom:
@@ -49,19 +50,19 @@ resources:
         DeletionPolicy: Retain
         Properties:
           AttributeDefinitions:
-            - AttributeName: hash
-              AttributeType: N
+            - AttributeName: type
+              AttributeType: S
             - AttributeName: timestamp
               AttributeType: N
           KeySchema:
-            - AttributeName: hash
+            - AttributeName: type
               KeyType: HASH
             - AttributeName: timestamp
               KeyType: RANGE
           ProvisionedThroughput:
             ReadCapacityUnits: 1
             WriteCapacityUnits: 1
-          TableName: 'statusEventTemp-${opt:stage}'
+          TableName: 'statusEvent-${opt:stage}'
 
 functions:
   add:
@@ -98,4 +99,18 @@ functions:
       - http:
           path: mergelock/back
           method: post
+
+  open:
+    handler: handler.open
+    events:
+      - http:
+          path: mergelock/open
+          method: get
+
+  close:
+    handler: handler.close
+    events:
+      - http:
+          path: mergelock/close
+          method: get
 

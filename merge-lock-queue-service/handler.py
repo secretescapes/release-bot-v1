@@ -1,5 +1,6 @@
 import boto3
 import botocore
+from boto3.dynamodb.conditions import Key
 import time
 import logging
 import json
@@ -66,10 +67,11 @@ def add(event, context):
         }
 
 def list(event, context):
+    logger.info("List invoke with event: %s" % event)
     try:
         return {
             "statusCode": 200,
-            "body": '{"queue": %s}' % json.dumps(_get_queue(), default=default)
+            "body": '{"queue": %s, "status": "%s"}' % (json.dumps(_get_queue(), default=default), _get_queue_status())
         }
     except Exception as e:
         logger.error('Exception: %s' % e)
@@ -168,6 +170,29 @@ def back(event, context):
                 "statusCode": 200
             }
 
+def open(event, context):
+    logger.info("Open queue invoked with event: %s" % event)
+    try:
+        _insert_status_event("OPEN")
+    except Exception as e:
+        logger.error("Exception: %s" % e)
+        return _responseError(500, "Unknown error")
+
+    return {
+                "statusCode": 200
+            }
+
+def close(event, context):
+    logger.info("Close queue invoked with event: %s" % event)
+    try:
+        _insert_status_event("CLOSE")
+    except Exception as e:
+        logger.error("Exception: %s" % e)
+        return _responseError(500, "Unknown error")
+
+    return {
+                "statusCode": 200
+            }
 
 def _swapAndNotify(user_1, user_2):
     logger.info("swap and notify %s and %s" % (user_1, user_2))
@@ -275,6 +300,46 @@ def _insert_to_queue(username, timestamp = None):
                 },
                 ConditionExpression = 'attribute_not_exists(username)'
             )
+
+def _get_queue_status():
+    logger.info("Get queue status")
+    table = _getTable('statusEvent')
+    try:
+        open_response = table.query(
+            KeyConditionExpression = Key('type').eq('OPEN'),
+            ScanIndexForward=False,
+            Limit=1
+        )
+        close_response = table.query(
+            KeyConditionExpression = Key('type').eq('CLOSE'),
+            ScanIndexForward=False,
+            Limit=1
+        )
+
+        last_open_timestamp = 0
+        last_close_timestamp = 0
+
+        if open_response['Count'] > 0:
+            last_open_timestamp = open_response['Items'][0]['timestamp']
+        if close_response['Count'] > 0:
+            last_close_timestamp = close_response['Items'][0]['timestamp']
+
+        if last_open_timestamp > last_close_timestamp:
+            return "open"
+        else:
+            return "closed"
+        
+    except Exception as e:
+        logger.error("Error querying status: %s" % e)
+
+def _insert_status_event(event):
+    table = _getTable('statusEvent')
+    return table.put_item(
+        Item = {
+        'type': event,
+        'timestamp': int(round(time.time() * 1000))
+        }
+    )
 
 def _update_to_queue(username, timestamp = None):
     if (not timestamp):
