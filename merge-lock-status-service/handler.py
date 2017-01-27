@@ -4,6 +4,10 @@ import os
 import logging
 import time
 
+from dotenv import load_dotenv
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
 stage = os.environ.get("STAGE")
 region = os.environ.get("REGION")
 
