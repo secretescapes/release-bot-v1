@@ -23,9 +23,13 @@ logger.setLevel(logging.INFO)
 
 stage = os.environ.get("STAGE")
 region = os.environ.get("REGION")
+REPLIER_LAMBDA_NAME = os.environ.get("REPLIER_LAMBDA_NAME")
+
 user_service_api_id = os.environ.get("%s_USER_SERVICE_API_ID" % stage.upper())
 queue_service_api_id = os.environ.get("%s_QUEUE_SERVICE_API_ID" % stage.upper())
 unknown_error_message = ":dizzy_face: Something went really wrong, sorry"
+
+_lambda = boto3.client('lambda')
 
 def merge_lock(event, context):
     try:
@@ -33,34 +37,59 @@ def merge_lock(event, context):
         params = event.get('body')
         _validate(params['token'])
         text = params.get('text').split()
+        response_url = params.get('response_url')
         logger.info("Command received: %s" % text)
+        payload = {'text' : text, 'response_url' : response_url, 'username':params.get('user_name')}
 
-        if len(text) == 1 and text[0].lower() == 'list':
-            return {"text":_list_request_handler()}
-
-        elif len(text) == 2 and text[0].lower() == 'add':
-            username = _resolve_username(text[1], params.get('user_name'))
-            return {"text":_add_request_handler(username)}
-
-        elif len(text) == 2 and text[0].lower() == 'remove':
-            username = _resolve_username(text[1], params.get('user_name'))
-            return {"text":_remove_request_handler(username)}
-
-        elif len(text) ==   2 and text[0].lower() == 'back':
-            username = _resolve_username(text[1], params.get('user_name'))
-            return {"text":_back_request_handler(username)}
+        _lambda.invoke(
+            FunctionName=REPLIER_LAMBDA_NAME,
+            InvocationType='Event',
+            Payload=json.dumps(payload))
         
-        elif len(text) == 3 and text[0].lower() == 'register':
-            username = _resolve_username(text[1], params.get('user_name'))
-            githubUsername = text[2]
-            return {"text":_register_request_handler(username, githubUsername)}
-        
-        else:
-            return {"text": "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock back [username]\n/lock register me [github username]\n(tip: you can use _me_ instead of your username)"}
+        return {"text":'Got it!'}
     except Exception as e:
         logger.error("Exception: %s" % e)
         return {"text": unknown_error_message}
 
+def dispatcher(event, context):
+
+    try:
+        logger.info("Dispatcher invoked with event: %s" % event)
+        text = event['text']
+        response_url = event['response_url']
+        slack_username = event['username']
+
+        response = "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock back [username]\n/lock register me [github username]\n(tip: you can use _me_ instead of your username)"
+
+        if len(text) == 1 and text[0].lower() == 'list':
+            response = _list_request_handler()
+
+        elif len(text) == 2 and text[0].lower() == 'add':
+            username = _resolve_username(text[1], slack_username)
+            response = _add_request_handler(username)
+
+        elif len(text) == 2 and text[0].lower() == 'remove':
+            username = _resolve_username(text[1], slack_username)
+            response = _remove_request_handler(username)
+
+        elif len(text) ==   2 and text[0].lower() == 'back':
+            username = _resolve_username(text[1], slack_username)
+            response = _back_request_handler(username)
+        
+        elif len(text) == 3 and text[0].lower() == 'register':
+            username = _resolve_username(text[1], slack_username)
+            githubUsername = text[2]
+            response = _register_request_handler(username, githubUsername)
+
+    except Exception as e:
+        logger.error("Exception: %s" % e)
+        response = unknown_error_message
+
+    logger.info("Command response: %s" % response)
+    headers = {'content-type': 'application/json'}
+    payload = {'text': response}
+    requests.post(response_url, data=json.dumps(payload), headers=headers)
+    
 
 def _resolve_username(command_username, requester_username):
     if command_username.lower() == 'me':
