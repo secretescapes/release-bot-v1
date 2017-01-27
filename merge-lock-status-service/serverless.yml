@@ -1,0 +1,64 @@
+service: merge-lock-status-service
+
+
+provider:
+  profile: ml-serverless
+  name: aws
+  runtime: python2.7
+  stage: dev
+  region: eu-west-1
+  iamRoleStatements:
+  - Effect: "Allow"
+    Resource: "*"
+    Action:
+      - "dynamodb:PutItem"
+      - "dynamodb:Query"
+
+plugins:
+  - serverless-plugin-write-env-vars
+
+custom:
+  writeEnvVars:
+    STAGE: ${opt:stage}
+    REGION: ${opt:region}
+
+functions:
+  open:
+    handler: handler.open
+    events:
+      - http:
+          path: window/open
+          method: get
+  close:
+    handler: handler.close
+    events:
+      - http:
+          path: window/close
+          method: get
+  status:
+    handler: handler.status
+    events:
+      - http:
+          path: window/status
+          method: get
+
+resources:
+  Resources:
+    statusEventsDynamoDbTable:
+        Type: 'AWS::DynamoDB::Table'
+        DeletionPolicy: Retain
+        Properties:
+          AttributeDefinitions:
+            - AttributeName: type
+              AttributeType: S
+            - AttributeName: timestamp
+              AttributeType: N
+          KeySchema:
+            - AttributeName: type
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+          TableName: 'statusEvents-${opt:stage}'
