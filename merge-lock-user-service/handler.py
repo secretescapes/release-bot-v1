@@ -17,10 +17,11 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 stage = os.environ.get("STAGE")
+region = os.environ.get("REGION")
 
 
 _client = boto3.client('dynamodb')
-_dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+_dynamodb = boto3.resource('dynamodb', region_name=region)
 
 def update(event, context):
     logger.info("Create invoked with event: %s" % event)

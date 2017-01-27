@@ -22,6 +22,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 stage = os.environ.get("STAGE")
+region = os.environ.get("REGION")
 user_service_api_id = os.environ.get("%s_USER_SERVICE_API_ID" % stage.upper())
 queue_service_api_id = os.environ.get("%s_QUEUE_SERVICE_API_ID" % stage.upper())
 unknown_error_message = ":dizzy_face: Something went really wrong, sorry"
@@ -68,7 +69,7 @@ def _resolve_username(command_username, requester_username):
         return command_username
 
 def _back_request_handler(username):
-    response = requests.post("https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock/back" % (queue_service_api_id, stage), data={'username': username})
+    response = requests.post("https://%s.execute-api.%s.amazonaws.com/%s/mergelock/back" % (queue_service_api_id, region, stage), data={'username': username})
     if response.status_code == 200:
         return '%s has been *pulled back* one position in the queue :point_down:' % username
     elif response.status_code == 401:
@@ -81,7 +82,7 @@ def _back_request_handler(username):
 
 
 def _register_request_handler(username, githubUsername):
-    response = requests.put("https://%s.execute-api.eu-west-1.amazonaws.com/%s/user-service/user" % (user_service_api_id, stage), data={'username': username, 'githubUsername':githubUsername})
+    response = requests.put("https://%s.execute-api.%s.amazonaws.com/%s/user-service/user" % (user_service_api_id, region, stage), data={'username': username, 'githubUsername':githubUsername})
     if response.status_code == 200:
         return '%s has been *registered* with the github username %s' % (username, githubUsername)
     else:   
@@ -89,7 +90,7 @@ def _register_request_handler(username, githubUsername):
         return unknown_error_message
 
 def _remove_request_handler(username):
-    response = requests.post("https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock/remove" % (queue_service_api_id, stage), data={'username': username})
+    response = requests.post("https://%s.execute-api.%s.amazonaws.com/%s/mergelock/remove" % (queue_service_api_id, region, stage), data={'username': username})
     if response.status_code == 200:
         return '%s has been *removed* from the queue' % username
     elif response.status_code == 401:
@@ -101,7 +102,7 @@ def _remove_request_handler(username):
     return response.text
 
 def _add_request_handler(username):
-    response = requests.post("https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock/add" % (queue_service_api_id, stage), data={'username': username})
+    response = requests.post("https://%s.execute-api.%s.amazonaws.com/%s/mergelock/add" % (queue_service_api_id, region, stage), data={'username': username})
     logger.info ("Status code: %d" % response.status_code)
     if response.status_code == 200:
         return '%s has been *added* to the queue :point_right:' % username
@@ -114,7 +115,9 @@ def _add_request_handler(username):
         return unknown_error_message
 
 def _list_request_handler():
-    response = requests.get("https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock/list" % (queue_service_api_id, stage))
+    url = "https://%s.execute-api.%s.amazonaws.com/%s/mergelock/list" % (queue_service_api_id, region, stage)
+    logger.info("List request url: %s" % url)
+    response = requests.get(url)
     if response.status_code == 200:
         return _format_successful_list_response(response.json()['queue'])
     else:

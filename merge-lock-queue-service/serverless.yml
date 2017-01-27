@@ -18,6 +18,7 @@ provider:
 custom:
   writeEnvVars:
     STAGE: ${opt:stage}
+    REGION: ${opt:region}
     DEV_USER_SERVICE_API_ID: ${file(../env_vars.yml):DEV_USER_SERVICE_API_ID}
 
     PROD_USER_SERVICE_API_ID: ${file(../env_vars.yml):PROD_USER_SERVICE_API_ID}

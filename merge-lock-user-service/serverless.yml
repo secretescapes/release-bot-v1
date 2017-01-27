@@ -17,6 +17,7 @@ provider:
 custom:
   writeEnvVars:
     STAGE: ${opt:stage}
+    REGION: ${opt:region}
 plugins:
   - serverless-plugin-write-env-vars
 

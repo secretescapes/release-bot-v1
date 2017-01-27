@@ -21,6 +21,7 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 stage = os.environ.get("STAGE")
+region = os.environ.get("REGION")
 user_service_api_id = os.environ.get("%s_USER_SERVICE_API_ID" % stage.upper())
 ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
 
@@ -41,7 +42,7 @@ def add(event, context):
             return _responseError(400, "You must provide a username")
 
         if username is not None:
-            response = requests.get("https://%s.execute-api.eu-west-1.amazonaws.com/%s/user-service/user/%s" % (user_service_api_id, stage, username))
+            response = requests.get("https://%s.execute-api.%s.amazonaws.com/%s/user-service/user/%s" % (user_service_api_id, region, stage, username))
             if response.status_code == 400:
                 return _responseError(402, "The user is not registered")
             elif response.status_code != 200:
@@ -225,11 +226,13 @@ def _publish_add_user(username):
     _publish(payload, 'user_added_listener')
 
 def _publish(payload, topic):
-    logger.info("Publish message %s in topic %s" % (payload, topic))
+    topicArn = 'arn:aws:sns:%s:%s:%s-%s' % (region, ACCOUNT_ID, stage, topic)
+    logger.info("Publish message %s in topic %s" % (payload, topicArn))
     try:
         response = sns.publish(
-            TopicArn='arn:aws:sns:eu-west-1:%s:%s-%s' % (ACCOUNT_ID, stage, topic),
+            TopicArn= topicArn,
             Message= json.dumps(payload))
+        logger.info("Publish response: %s" % response)
     except Exception as e:
         logger.error("Exception publishing in topic %s: %s" % (topic, e))
     
@@ -261,7 +264,7 @@ def _get_username(event):
     
 
 def _getTable(table_name):
-    dynamodb = boto3.resource('dynamodb', region_name='eu-west-1')
+    dynamodb = boto3.resource('dynamodb', region_name=region)
     return dynamodb.Table("%s-%s" %(table_name, stage))
 
 def _insert_to_queue(username, timestamp = None):
