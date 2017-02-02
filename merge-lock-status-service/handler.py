@@ -3,6 +3,11 @@ import boto3
 import os
 import logging
 import time
+import sys
+from boto3.dynamodb.conditions import Key, Attr
+
+here = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(os.path.join(here, './vendored'))
 
 from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -14,10 +19,13 @@ region = os.environ.get("REGION")
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+CLOSE_EVENT = "CLOSE"
+OPEN_EVENT = "OPEN"
+
 def open(event, context):
     logger.info("Invoked open with event: %s" % event)
     try:
-        _insert_status_event("OPEN")
+        _insert_status_event(OPEN_EVENT)
     except Exception as e: 
         logger.error("Exception: %s" % e)
         return _responseError(500, "Unknown error")
@@ -27,34 +35,64 @@ def open(event, context):
     }
 
 def close(event, context):
-    body = {
-        "message": "Go Serverless v1.0! Your function executed successfully!",
-        "input": event
+    logger.info("Invoked open with event: %s" % event)
+    try:
+        _insert_status_event(CLOSE_EVENT)
+    except Exception as e: 
+        logger.error("Exception: %s" % e)
+        return _responseError(500, "Unknown error")
+
+    return {
+        "statusCode": 200
     }
 
-    response = {
-        "statusCode": 200,
-        "body": json.dumps(body)
-    }
+def status(event, context):
+    logger.info("Invoked status with event: %s" % event)
+    try:
+        last_open = _retrieve_last_open_event()
+        last_closed = _retrieve_last_closed_event()
 
-    return response
+        status = _get_status(last_open, last_closed)
 
-def list(event, context):
-    body = {
-        "message": "Go Serverless v1.0! Your function executed successfully!",
-        "input": event
-    }
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"status": status})
+        }
+    except Exception as e:
+        logger.error("Exception: %s" % e)
+        return _responseError(500, "Unknown error")
 
-    response = {
-        "statusCode": 200,
-        "body": json.dumps(body)
-    }
 
-    return response
+def _get_status(last_open_event, last_closed_event):
+    if last_open_event and last_closed_event:
+        if last_open_event['timestamp'] > last_closed_event['timestamp']:
+            status = "OPEN"
+        else:
+            status = "CLOSE"
+    elif last_open_event and not last_closed_event:
+            status = "OPEN"
+    else:
+            status = "CLOSE"
+    return status
+
+def _retrieve_last_event(event_type):
+    response = _getTable('statusEvents').query(
+        KeyConditionExpression = Key('type').eq(event_type),
+        Limit = 1,
+        ScanIndexForward = False
+    )
+    if len(response['Items']) > 0:
+        return response['Items'][0]
+
+def _retrieve_last_open_event():
+    return _retrieve_last_event(OPEN_EVENT)
+
+def _retrieve_last_closed_event():    
+    return _retrieve_last_event(CLOSE_EVENT)
 
 
 def _insert_status_event(event):
-    table = _getTable('statusEvent')
+    table = _getTable('statusEvents')
     return table.put_item(
         Item = {
         'type': event,
