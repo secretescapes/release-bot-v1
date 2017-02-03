@@ -19,6 +19,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 _lambda = boto3.client('lambda')
 
+#TODO: This doesn't need to be a lambda function
 def notify_slack(event, context):
     logger.info("Notify slack invoked with event: %s" % event)
     text = event['text']
@@ -63,6 +64,18 @@ def new_top_listener(event, context):
         return
 
     payload = {'text': ":bell:*%s*, you have aquired the merge lock!:bell:\n%s" % (queue[0]['username'], _format_successful_list_response(queue))}
+    response = _lambda.invoke(
+        FunctionName=NOTIFY_SLACK_LAMBDA_NAME,
+        InvocationType='Event',
+        Payload=json.dumps(payload))
+
+def push_closed_window_listener(event, context):
+    logger.info("Unauthorized push (Window closed) invoked with event: %s" % event)
+    received_data = json.loads(event['Records'][0]['Sns']['Message'])
+    queue = json.loads(received_data['queue'])
+
+    payload = {'text': ":rotating_light:*%s* has merged while the release window is closed:rotating_light:\n%s" % 
+                    (received_data['username'],_format_successful_list_response(queue))}
     response = _lambda.invoke(
         FunctionName=NOTIFY_SLACK_LAMBDA_NAME,
         InvocationType='Event',

@@ -7,6 +7,10 @@ provider:
   stage: dev
   region: eu-west-1
 
+package:
+  include:
+    - ../commons/**
+
 custom:
   writeEnvVars:
     STAGE: ${opt:stage}

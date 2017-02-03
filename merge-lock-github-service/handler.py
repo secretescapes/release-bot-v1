@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+from commons import publish_to_sns
 
 
 here = os.path.dirname(os.path.realpath(__file__))

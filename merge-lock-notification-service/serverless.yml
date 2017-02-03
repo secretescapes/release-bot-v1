@@ -35,4 +35,8 @@ functions:
     handler: handler.unauthorized_push_listener
     events:
       - sns: ${opt:stage}-unauthorized_push_listener
+  pushClosedWindowListener:
+    handler: handler.push_closed_window_listener
+    events:
+      - sns: ${opt:stage}-push_closed_window_listener
 
