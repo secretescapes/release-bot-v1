@@ -15,6 +15,10 @@ provider:
         - "dynamodb:Scan"
         - "sns:*"
 
+package:
+  include:
+    - ../commons/**
+
 custom:
   writeEnvVars:
     STAGE: ${opt:stage}

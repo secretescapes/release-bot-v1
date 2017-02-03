@@ -7,10 +7,12 @@ import urlparse
 from decimal import Decimal
 import os
 import sys
+from commons import publish_to_sns
 
 
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(here, './vendored'))
+sys.path.append(os.path.join(here, './commons'))
 import requests
 
 logger = logging.getLogger()
@@ -207,7 +209,7 @@ def _removeAndNotify(username):
             _publish_new_top()
 
     except Exception as e:
-        logger.error("Exception taking snapshot of the queue after removing")        
+        logger.error("Exception taking snapshot of the queue after removing: %s" % e)        
 
 
 def _publish_unauthorized_push(username):
@@ -226,15 +228,10 @@ def _publish_add_user(username):
     _publish(payload, 'user_added_listener')
 
 def _publish(payload, topic):
-    topicArn = 'arn:aws:sns:%s:%s:%s-%s' % (region, ACCOUNT_ID, stage, topic)
-    logger.info("Publish message %s in topic %s" % (payload, topicArn))
     try:
-        response = sns.publish(
-            TopicArn= topicArn,
-            Message= json.dumps(payload))
-        logger.info("Publish response: %s" % response)
+        publish_to_sns.publish(stage, topic, ACCOUNT_ID, region, payload)
     except Exception as e:
-        logger.error("Exception publishing in topic %s: %s" % (topic, e))
+        logger.error("Exception publishing: %s" % e)
     
 def _responseError(status_code, error_msg):
     return {
@@ -260,7 +257,7 @@ def _get_username(event):
         params = event['body']
         return params['username']
     except KeyError as e:
-        logger.error("Unknown key %s" %s)
+        logger.error("Unknown key %s" % e)
     
 
 def _getTable(table_name):
