@@ -5,9 +5,11 @@ import logging
 import time
 import sys
 from boto3.dynamodb.conditions import Key, Attr
+from commons import publish_to_sns
 
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(here, './vendored'))
+sys.path.append(os.path.join(here, './commons'))
 
 from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
@@ -15,6 +17,7 @@ load_dotenv(dotenv_path)
 
 stage = os.environ.get("STAGE")
 region = os.environ.get("REGION")
+ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -49,10 +52,7 @@ def close(event, context):
 def status(event, context):
     logger.info("Invoked status with event: %s" % event)
     try:
-        last_open = _retrieve_last_open_event()
-        last_closed = _retrieve_last_closed_event()
-
-        status = _get_status(last_open, last_closed)
+        status = _get_status()
 
         return {
             "statusCode": 200,
@@ -62,8 +62,23 @@ def status(event, context):
         logger.error("Exception: %s" % e)
         return _responseError(500, "Unknown error")
 
+def pushListener(event, context):
+    logger.info("Invoked push listener with event: %s" % event)
+    if _get_status() == "CLOSE":
+        logger.info("Push while window is closed")
+        received_data = json.loads(event['Records'][0]['Sns']['Message'])
+        username = received_data['username']
+        payload = {'username': username}
+        publish_to_sns.publish(stage, "push_closed_window_listener", ACCOUNT_ID, region, payload)
 
-def _get_status(last_open_event, last_closed_event):
+
+def _get_status():
+    last_open = _retrieve_last_open_event()
+    last_closed = _retrieve_last_closed_event()
+
+    return _calculate_status(last_open, last_closed)
+
+def _calculate_status(last_open_event, last_closed_event):
     if last_open_event and last_closed_event:
         if last_open_event['timestamp'] > last_closed_event['timestamp']:
             status = "OPEN"

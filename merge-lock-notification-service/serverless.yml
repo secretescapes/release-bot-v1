@@ -14,28 +14,26 @@ provider:
 
 plugins:
   - serverless-plugin-write-env-vars
-
 custom:
   writeEnvVars:
-    LAMBDA_NAME: ${self:service}-${opt:stage}-notifySlack
-
+    STAGE: ${opt:stage}
+    DEV_SLACK_WEBHOOK_URL : ${file(../env_vars.yml):DEV_SLACK_WEBHOOK_URL}
+    PROD_SLACK_WEBHOOK_URL : ${file(../env_vars.yml):PROD_SLACK_WEBHOOK_URL}
 
 functions:
-  notifySlack:
-    handler: handler.notify_slack
-  userAddedListener:
+  functionUserAddedListener:
     handler: handler.user_added_listener
     # events:
     #   - sns: ${opt:stage}-user_added_listener
-  newTopListener:
+  functionNewTopListener:
     handler: handler.new_top_listener
     events:
       - sns: ${opt:stage}-new_top_listener
-  unauthorizedPushListener:
+  functionUnauthPushListener:
     handler: handler.unauthorized_push_listener
     events:
       - sns: ${opt:stage}-unauthorized_push_listener
-  pushClosedWindowListener:
+  functionClosedWindowListener:
     handler: handler.push_closed_window_listener
     events:
       - sns: ${opt:stage}-push_closed_window_listener
