@@ -41,7 +41,7 @@ def merge_lock(event, context):
         text = params.get('text').split()
         response_url = params.get('response_url')
         logger.info("Command received: %s" % text)
-        payload = {'text' : text, 'response_url' : response_url, 'username':params.get('user_name')}
+        payload = {'text' : text, 'response_url' : response_url, 'username':params.get('user_name'), 'user_id': params.get('user_id')}
 
         _lambda.invoke(
             FunctionName=REPLIER_LAMBDA_NAME,
@@ -60,6 +60,7 @@ def dispatcher(event, context):
         text = event['text']
         response_url = event['response_url']
         slack_username = event['username']
+        user_id = event['user_id']
 
         response = "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock back [username]\n/lock register me [github username]\n/lock window open\n/lock window close\n(tip: you can use _me_ instead of your username)"
 
@@ -67,15 +68,15 @@ def dispatcher(event, context):
             response = _list_request_handler()
 
         elif len(text) == 2 and text[0].lower() == 'add':
-            username = _resolve_username(text[1], slack_username)
+            username = _resolve_username(text[1], slack_username, user_id)
             response = _add_request_handler(username)
 
         elif len(text) == 2 and text[0].lower() == 'remove':
-            username = _resolve_username(text[1], slack_username)
+            username = _resolve_username(text[1], slack_username, user_id)
             response = _remove_request_handler(username)
 
         elif len(text) == 2 and text[0].lower() == 'back':
-            username = _resolve_username(text[1], slack_username)
+            username = _resolve_username(text[1], slack_username, user_id)
             response = _back_request_handler(username)
 
         elif len(text) > 1 and text[0].lower() == 'window':
@@ -86,7 +87,7 @@ def dispatcher(event, context):
                 response = _close_window_handler()
         
         elif len(text) == 3 and text[0].lower() == 'register':
-            username = _resolve_username(text[1], slack_username)
+            username = _resolve_username(text[1], slack_username, user_id)
             githubUsername = text[2]
             response = _register_request_handler(username, githubUsername)
 
@@ -118,9 +119,9 @@ def _close_window_handler():
         logger.error("Status code receive: %i" % response.status_code)   
         return unknown_error_message
 
-def _resolve_username(command_username, requester_username):
+def _resolve_username(command_username, requester_username, requester_user_id):
     if command_username.lower() == 'me':
-        return requester_username
+        return "<@%s|%s>"%(requester_user_id,requester_username)
     else:
         return command_username
 

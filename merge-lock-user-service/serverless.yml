@@ -22,35 +22,35 @@ plugins:
   - serverless-plugin-write-env-vars
 
 functions:
-  update:
+  functionUpdate:
     handler: handler.update
     events:
       - http:
           path: user-service/user
           method: PUT
           
-  listAll:
+  functionListAll:
     handler: handler.list_all
     events:
       - http:
           path: user-service/user
           method: GET
   
-  list:
+  functionListSingle:
     handler: handler.list
     events:
       - http:
           path: user-service/user/{username}
           method: GET
 
-  reverseList:
+  functionReverseList:
     handler: handler.reverseList
     events:
       - http:
           path: user-service/user/reverse/{username}
           method: GET
   
-  delete:
+  functionDelete:
     handler: handler.delete
     events:
       - http:

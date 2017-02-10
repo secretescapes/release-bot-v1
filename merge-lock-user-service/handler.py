@@ -4,6 +4,7 @@ import logging
 import urlparse
 import os
 import sys
+import urllib
 from boto3.dynamodb.conditions import Key, Attr
 
 logger = logging.getLogger()
@@ -118,7 +119,8 @@ def _getParameters(body):
     return (parsed['username'][0], parsed['githubUsername'][0])
 
 def _getUsernameFromPath(event):
-    return event['pathParameters']['username']
+    username = event['pathParameters']['username']
+    return urllib.unquote(username)
 
 def _insert(item, table):
     return table.put_item (
