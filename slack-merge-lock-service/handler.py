@@ -27,6 +27,8 @@ REPLIER_LAMBDA_NAME = os.environ.get("REPLIER_LAMBDA_NAME")
 
 user_service_api_id = os.environ.get("%s_USER_SERVICE_API_ID" % stage.upper())
 queue_service_api_id = os.environ.get("%s_QUEUE_SERVICE_API_ID" % stage.upper())
+status_service_api_id = os.environ.get("%s_STATUS_SERVICE_API_ID" % stage.upper())
+
 unknown_error_message = ":dizzy_face: Something went really wrong, sorry"
 
 _lambda = boto3.client('lambda')
@@ -59,7 +61,7 @@ def dispatcher(event, context):
         response_url = event['response_url']
         slack_username = event['username']
 
-        response = "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock back [username]\n/lock register me [github username]\n(tip: you can use _me_ instead of your username)"
+        response = "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock back [username]\n/lock register me [github username]\n/lock window open\n/lock window close\n(tip: you can use _me_ instead of your username)"
 
         if len(text) == 1 and text[0].lower() == 'list':
             response = _list_request_handler()
@@ -72,9 +74,16 @@ def dispatcher(event, context):
             username = _resolve_username(text[1], slack_username)
             response = _remove_request_handler(username)
 
-        elif len(text) ==   2 and text[0].lower() == 'back':
+        elif len(text) == 2 and text[0].lower() == 'back':
             username = _resolve_username(text[1], slack_username)
             response = _back_request_handler(username)
+
+        elif len(text) > 1 and text[0].lower() == 'window':
+            action = text[1]
+            if (action.lower() == "open"):
+                response = _open_window_handler()
+            elif (action.lower() == "close"):
+                response = _close_window_handler()
         
         elif len(text) == 3 and text[0].lower() == 'register':
             username = _resolve_username(text[1], slack_username)
@@ -90,6 +99,24 @@ def dispatcher(event, context):
     payload = {'text': response}
     requests.post(response_url, data=json.dumps(payload), headers=headers)
     
+
+def _open_window_handler():
+    url = "https://%s.execute-api.%s.amazonaws.com/%s/window/open" % (status_service_api_id, region, stage)
+    response = requests.get(url)
+    if response.status_code == 200:
+        return "Release window is now open"
+    else:
+        logger.error("Status code receive: %i" % response.status_code)   
+        return unknown_error_message
+
+def _close_window_handler():
+    url = "https://%s.execute-api.%s.amazonaws.com/%s/window/close" % (status_service_api_id, region, stage)
+    response = requests.get(url)
+    if response.status_code == 200:
+        return "Release window is now close"
+    else:
+        logger.error("Status code receive: %i" % response.status_code)   
+        return unknown_error_message
 
 def _resolve_username(command_username, requester_username):
     if command_username.lower() == 'me':
@@ -145,7 +172,6 @@ def _add_request_handler(username):
 
 def _list_request_handler():
     url = "https://%s.execute-api.%s.amazonaws.com/%s/mergelock/list" % (queue_service_api_id, region, stage)
-    logger.info("List request url: %s" % url)
     response = requests.get(url)
     if response.status_code == 200:
         return format_utils.format_queue(response.json()['queue'])

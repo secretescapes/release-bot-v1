@@ -22,9 +22,11 @@ custom:
     STAGE: ${opt:stage}
     DEV_USER_SERVICE_API_ID: ${file(../env_vars.yml):DEV_USER_SERVICE_API_ID}
     DEV_QUEUE_SERVICE_API_ID: ${file(../env_vars.yml):DEV_QUEUE_SERVICE_API_ID}
+    DEV_STATUS_SERVICE_API_ID: ${file(../env_vars.yml):DEV_STATUS_SERVICE_API_ID}
 
     PROD_USER_SERVICE_API_ID: ${file(../env_vars.yml):PROD_USER_SERVICE_API_ID}
     PROD_QUEUE_SERVICE_API_ID: ${file(../env_vars.yml):PROD_QUEUE_SERVICE_API_ID}
+    PROD_STATUS_SERVICE_API_ID: ${file(../env_vars.yml):PROD_STATUS_SERVICE_API_ID}
     
     REPLIER_LAMBDA_NAME: ${self:service}-${opt:stage}-functionDispatcher
 
