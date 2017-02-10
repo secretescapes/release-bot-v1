@@ -16,7 +16,6 @@ load_dotenv(dotenv_path)
 stage = os.environ.get("STAGE")
 region = os.environ.get("REGION")
 user_service_api_id = os.environ.get("%s_USER_SERVICE_API_ID" % stage.upper())
-queue_service_api_id = os.environ.get("%s_QUEUE_SERVICE_API_ID" % stage.upper())
 ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
 
 logger = logging.getLogger()

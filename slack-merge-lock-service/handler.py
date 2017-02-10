@@ -3,7 +3,7 @@ import botocore
 import time
 import logging
 import json
-
+from commons import format_utils
 import os
 import sys
 
@@ -148,25 +148,11 @@ def _list_request_handler():
     logger.info("List request url: %s" % url)
     response = requests.get(url)
     if response.status_code == 200:
-        return _format_successful_list_response(response.json()['queue'])
+        return format_utils.format_queue(response.json()['queue'])
     else:
         logger.error("Status code received: %i" % response.status_code)
         logger.error("Error received: %i" % response.json()['queue'])
         return {'text': unknown_error_message}
-
-def _format_successful_list_response(json):
-    i = 1
-    text = 'Here is the current status of the queue:\n'
-    for item in json:
-        if i == 1:
-            text += "*%d. %s*\n" % (i, item['username'])
-        else:
-            text += "%d. %s\n" % (i, item['username'])
-        i+= 1
-    
-    if i == 1:
-        text = 'The queue is currently empty!'
-    return text
 
 def _validate(token):
     if (token != os.environ['SLACK_TOKEN']):
