@@ -17,6 +17,7 @@ stage = os.environ.get("STAGE")
 region = os.environ.get("REGION")
 user_service_api_id = os.environ.get("%s_USER_SERVICE_API_ID" % stage.upper())
 queue_service_api_id = os.environ.get("%s_QUEUE_SERVICE_API_ID" % stage.upper())
+ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -32,11 +33,9 @@ def push(event, context):
             response = requests.get("https://%s.execute-api.%s.amazonaws.com/%s/user-service/user/reverse/%s" % (user_service_api_id, region, stage, author_username))
             if response.status_code == 200:
                 username = response.json()[0]['username']
-                response = requests.get("https://%s.execute-api.%s.amazonaws.com/%s/mergelock/pop/%s" % (queue_service_api_id, region, stage, username))
-                if response.status_code == 400:
-                    logger.info("[%s:%s] was not at the top of the queue" % (author_username, username))
-                elif response.status_code == 200:
-                    logger.info("[%s:%s] was at the top of the queue and has been removed" % (author_username, username))
+                _publish_push(username)
+            else:
+                _publish_push(author_username)
         return {
             "statusCode": 200
         }
@@ -45,3 +44,11 @@ def push(event, context):
         return {
             "statusCode": 500
         }
+
+
+def _publish_push(username):
+    try:
+        payload = {'username': username}
+        publish_to_sns.publish(stage, "push", ACCOUNT_ID, region, payload)
+    except Exception as e:
+        logger.error("Exception publishing: %s" % e)

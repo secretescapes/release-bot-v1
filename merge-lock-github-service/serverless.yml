@@ -6,6 +6,11 @@ provider:
   runtime: python2.7
   stage: dev
   region: eu-west-1
+  iamRoleStatements:
+    - Effect: "Allow"
+      Resource: "*"
+      Action:
+        - "sns:*"
 
 package:
   include:
@@ -20,15 +25,24 @@ custom:
 
     PROD_USER_SERVICE_API_ID: ${file(../env_vars.yml):PROD_USER_SERVICE_API_ID}
     PROD_QUEUE_SERVICE_API_ID: ${file(../env_vars.yml):PROD_QUEUE_SERVICE_API_ID}
+
+    ACCOUNT_ID: ${file(../env_vars.yml):ACCOUNT_ID}
     
 plugins:
   - serverless-plugin-write-env-vars
 
 
 functions:
-  push:
+  functionPush:
     handler: handler.push
     events:
       - http:
           path: github/push
           method: post
+
+resources:
+  Resources:
+    pushTopic:
+      Type: "AWS::SNS::Topic"
+      Properties:
+        TopicName: ${opt:stage}-push

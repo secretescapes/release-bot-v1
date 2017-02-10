@@ -109,8 +109,9 @@ def remove(event, context):
 
 def pop(event, context):
     try:
-        username = event['pathParameters']['username']
-        logger.info("Pop invoked with username: %s" % username)
+        logger.info("Pop executed with event: %s" % event)
+        username = _extract_username_from_event_for_pop(event)
+        logger.info("username: %s" % username)
         top_user = _get_top_user()
         logger.info("Top user is %s" %top_user)
         if not username or username != top_user:
@@ -130,6 +131,13 @@ def pop(event, context):
     except Exception as e:
         logger.error(e)
         return _responseError(500, "Unexpected Error")
+
+def _extract_username_from_event_for_pop(event):
+    if 'pathParameters' in event:
+        return event['pathParameters']['username']
+    else:
+        received_data = json.loads(event['Records'][0]['Sns']['Message'])
+        return received_data['username']
 
 def back(event, context):
     logger.info("Back invoked with event: %s" % event)

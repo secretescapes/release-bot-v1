@@ -50,35 +50,36 @@ resources:
         TableName: 'merge-lock-${opt:stage}'
 
 functions:
-  add:
+  functionAdd:
     handler: handler.add
     events:
       - http:
           path: mergelock/add/
           method: post
 
-  list:
+  functionList:
     handler: handler.list
     events:
       - http:
           path: mergelock/list
           method: get
 
-  remove:
+  functionRemove:
     handler: handler.remove
     events:
       - http:
           path: mergelock/remove/
           method: post
 
-  pop:
+  functionPop:
     handler: handler.pop
     events:
       - http:
           path: mergelock/pop/{username}
           method: get
+      - sns: "arn:aws:sns:${opt:region}:${file(../env_vars.yml):ACCOUNT_ID}:${opt:stage}-push"
 
-  back:
+  functionBack:
     handler: handler.back
     events:
       - http:
