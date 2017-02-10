@@ -72,3 +72,11 @@ resources:
             ReadCapacityUnits: 1
             WriteCapacityUnits: 1
           TableName: 'statusEvents-${opt:stage}'
+    openWindow:
+      Type: "AWS::SNS::Topic"
+      Properties:
+        TopicName: ${opt:stage}-open_window
+    closeWindow:
+      Type: "AWS::SNS::Topic"
+      Properties:
+        TopicName: ${opt:stage}-change_status

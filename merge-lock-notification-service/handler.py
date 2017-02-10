@@ -61,6 +61,18 @@ def unauthorized_push_listener(event, context):
     _notify_slack(payload)
 
 
+def status_change_listener(event, context):
+    logger.info("Status Change invoked with event: %s" % event)
+
+    received_data = json.loads(event['Records'][0]['Sns']['Message'])
+    new_status = received_data['new_status']
+
+    if new_status == "OPEN":
+        payload = {'text': ":trainonfire:The release window is now OPEN!"}
+    elif new_status == "CLOSE":
+        payload = {'text': ":construction:The release window is now CLOSE!"}
+    _notify_slack(payload)
+
 def _format_successful_list_response(json):
     i = 1
     text = 'Here is the current status of the queue:\n'

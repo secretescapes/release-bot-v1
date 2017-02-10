@@ -37,4 +37,8 @@ functions:
     handler: handler.push_closed_window_listener
     events:
       - sns: ${opt:stage}-push_closed_window_listener
+  functionStatusChangeListener:
+    handler: handler.status_change_listener
+    events:
+      - sns: arn:aws:sns:${opt:region}:${file(../env_vars.yml):ACCOUNT_ID}:${opt:stage}-change_status
 

@@ -77,7 +77,7 @@ functions:
       - http:
           path: mergelock/pop/{username}
           method: get
-      - sns: "arn:aws:sns:${opt:region}:${file(../env_vars.yml):ACCOUNT_ID}:${opt:stage}-push"
+      - sns: arn:aws:sns:${opt:region}:${file(../env_vars.yml):ACCOUNT_ID}:${opt:stage}-push
 
   functionBack:
     handler: handler.back

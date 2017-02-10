@@ -28,7 +28,11 @@ OPEN_EVENT = "OPEN"
 def open(event, context):
     logger.info("Invoked open with event: %s" % event)
     try:
+        previous = _get_status()
         _insert_status_event(OPEN_EVENT)
+        current = _get_status()
+        _notify_if_change(previous, current)
+
     except Exception as e: 
         logger.error("Exception: %s" % e)
         return _responseError(500, "Unknown error")
@@ -40,7 +44,11 @@ def open(event, context):
 def close(event, context):
     logger.info("Invoked open with event: %s" % event)
     try:
+        previous = _get_status()
         _insert_status_event(CLOSE_EVENT)
+        current = _get_status()
+        _notify_if_change(previous, current)
+
     except Exception as e: 
         logger.error("Exception: %s" % e)
         return _responseError(500, "Unknown error")
@@ -77,6 +85,11 @@ def _get_status():
     last_closed = _retrieve_last_closed_event()
 
     return _calculate_status(last_open, last_closed)
+
+def _notify_if_change(previous, current):
+    if (previous != current):
+        payload = {'new_status': current}
+        publish_to_sns.publish(stage, "change_status", ACCOUNT_ID, region, payload)
 
 def _calculate_status(last_open_event, last_closed_event):
     if last_open_event and last_closed_event:
