@@ -1,7 +1,7 @@
 service: merge-lock-queue-service
 
 provider:
-  profile: ml-serverless
+  profile: release-bot
   name: aws
   runtime: python2.7
   stage: dev
