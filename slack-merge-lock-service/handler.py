@@ -28,6 +28,7 @@ REPLIER_LAMBDA_NAME = os.environ.get("REPLIER_LAMBDA_NAME")
 user_service_api_id = os.environ.get("%s_USER_SERVICE_API_ID" % stage.upper())
 queue_service_api_id = os.environ.get("%s_QUEUE_SERVICE_API_ID" % stage.upper())
 status_service_api_id = os.environ.get("%s_STATUS_SERVICE_API_ID" % stage.upper())
+SLACK_TOKEN = os.environ.get("%s_SLACK_TOKEN" % stage.upper())
 
 unknown_error_message = ":dizzy_face: Something went really wrong, sorry"
 
@@ -139,6 +140,7 @@ def _back_request_handler(username):
 
 
 def _register_request_handler(username, githubUsername):
+    logger.info("Register request for %s - %s"%(username, githubUsername))
     response = requests.put("https://%s.execute-api.%s.amazonaws.com/%s/user-service/user" % (user_service_api_id, region, stage), data={'username': username, 'githubUsername':githubUsername})
     if response.status_code == 200:
         return '%s has been *registered* with the github username %s' % (username, githubUsername)
@@ -182,5 +184,5 @@ def _list_request_handler():
         return {'text': unknown_error_message}
 
 def _validate(token):
-    if (token != os.environ['SLACK_TOKEN']):
+    if (token != SLACK_TOKEN):
         raise Exception("Incorrect token")
