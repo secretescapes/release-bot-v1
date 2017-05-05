@@ -49,4 +49,8 @@ functions:
     handler: handler.status_change_listener
     events:
       - sns: arn:aws:sns:${opt:region}:${file(../env_vars.yml):ACCOUNT_ID}:${opt:stage}-change_status
+  functionPipelineStatus:
+    handler: handler.pipeline_status
+    events:
+      - sns: ${opt:stage}-pipeline
 

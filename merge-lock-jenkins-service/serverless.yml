@@ -5,18 +5,32 @@ provider:
   runtime: python2.7
   stage: dev
   region: eu-west-1
+  iamRoleStatements:
+    - Effect: "Allow"
+      Resource: "*"
+      Action:
+        - "sns:*"
 
 package:
   include:
     - ../commons/**
 
+plugins:
+  - serverless-plugin-write-env-vars
 custom:
   writeEnvVars:
     STAGE: ${opt:stage}
     REGION: ${opt:region}
+    ACCOUNT_ID: ${file(../env_vars.yml):ACCOUNT_ID}
 
 functions:
   pipelineTriggerFunction:
     handler: handler.pipelineTriggerFunction
     events:
       - sns:  arn:aws:sns:${opt:region}:${file(../env_vars.yml):ACCOUNT_ID}:${opt:stage}-new_top_listener
+  updateStatusFunction:
+    handler: handler.statusUpdateFunction
+    events:
+      - http:
+          path: mergelock-jenkins/status/
+          method: post
