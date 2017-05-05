@@ -10,6 +10,11 @@ package:
   include:
     - ../commons/**
 
+custom:
+  writeEnvVars:
+    STAGE: ${opt:stage}
+    REGION: ${opt:region}
+
 functions:
   pipelineTriggerFunction:
     handler: handler.pipelineTriggerFunction

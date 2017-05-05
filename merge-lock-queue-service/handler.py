@@ -290,10 +290,14 @@ def _update_to_queue(username, timestamp = None):
     if (not timestamp):
         timestamp = int(round(time.time() * 1000))
     table = _getTable('merge-lock')
-    return table.put_item (
-                Item = {
-                    'username': username,
-                    'timestamp': timestamp
+    return table.update_item (
+                Key = {
+                    'username': username
+                },
+                UpdateExpression = "SET #timestamp = :t",
+                ExpressionAttributeNames= { "#timestamp": "timestamp" },
+                ExpressionAttributeValues={
+                    ':t': timestamp
                 }
             )
 

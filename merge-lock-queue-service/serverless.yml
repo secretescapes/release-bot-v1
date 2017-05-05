@@ -11,6 +11,7 @@ provider:
       Resource: "*"
       Action:
         - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
         - "dynamodb:DeleteItem"
         - "dynamodb:Scan"
         - "sns:*"
