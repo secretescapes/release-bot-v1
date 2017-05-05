@@ -38,19 +38,20 @@ def add(event, context):
     try:
         logger.info("Add invoke with event: %s" % event)
         try:
-            username = _getParameters(event['body'])
+            username = _getUsernameFromBody(event['body'])
+            branch = _getBranchFromBody(event['body'])
         except Exception as e:
             logger.error(e)
             return _responseError(400, "You must provide a username")
 
-        if username is not None:
+        if username is not None and branch is not None:
             response = requests.get("https://%s.execute-api.%s.amazonaws.com/%s/user-service/user/%s" % (user_service_api_id, region, stage, username))
             if response.status_code == 400:
                 return _responseError(402, "The user is not registered")
             elif response.status_code != 200:
                 return _responseError(500, "Unexpected error")
             try:
-                _insert_to_queue(username)
+                _insert_to_queue(username, branch)
                 _publish_add_user(username)
                 return {
                     "statusCode": 200
@@ -84,7 +85,7 @@ def list(event, context):
 def remove(event, context):
     logger.info("Remove invoke with event: %s" % event)
     try:
-        username = _getParameters(event['body'])
+        username = _getUsernameFromBody(event['body'])
     except Exception as e:
         logger.error(e)
         return {
@@ -93,7 +94,7 @@ def remove(event, context):
         }
     if username is not None:
         try:
-            username = _getParameters(event['body'])
+            username = _getUsernameFromBody(event['body'])
             _removeAndNotify(username)
             return {
                 "statusCode": 200
@@ -142,7 +143,7 @@ def _extract_username_from_event_for_pop(event):
 def back(event, context):
     logger.info("Back invoked with event: %s" % event)
     try:
-        username = _getParameters(event['body'])
+        username = _getUsernameFromBody(event['body'])
     except Exception as e:
         logger.error(e)
         return _responseError(400, "You must provide a username")
@@ -272,14 +273,15 @@ def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name=region)
     return dynamodb.Table("%s-%s" %(table_name, stage))
 
-def _insert_to_queue(username, timestamp = None):
+def _insert_to_queue(username, branch, timestamp = None):
     if (not timestamp):
         timestamp = int(round(time.time() * 1000))
     table = _getTable('merge-lock')
     return table.put_item (
                 Item = {
                     'username': username,
-                    'timestamp': timestamp
+                    'timestamp': timestamp,
+                    'branch' : branch
                 },
                 ConditionExpression = 'attribute_not_exists(username)'
             )
@@ -308,9 +310,13 @@ def _remove(username, table):
         ConditionExpression = 'attribute_exists(username)'
     )
 
-def _getParameters(body):
+def _getUsernameFromBody(body):
     parsed = urlparse.parse_qs(body)
     return parsed['username'][0]
+
+def _getBranchFromBody(body):
+    parsed = urlparse.parse_qs(body)
+    return parsed['branch'][0]
 
 def _process_exception_for_remove(e, username):
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':

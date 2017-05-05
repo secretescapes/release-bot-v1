@@ -63,14 +63,10 @@ def dispatcher(event, context):
         slack_username = event['username']
         user_id = event['user_id']
 
-        response = "unrecognized command, please try one of these:\n/lock list\n/lock add [username]\n/lock remove [username]\n/lock back [username]\n/lock register me [github username]\n/lock window open\n/lock window close\n(tip: you can use _me_ instead of your username)"
+        response = "unrecognized command, please try one of these:\n/lock list\n/lock add [username] [branch]\n/lock remove [username]\n/lock back [username]\n/lock register me [github username]\n/lock window open\n/lock window close\n(tip: you can use _me_ instead of your username)"
 
         if len(text) == 1 and text[0].lower() == 'list':
             response = _list_request_handler()
-
-        elif len(text) == 2 and text[0].lower() == 'add':
-            username = _resolve_username(text[1], slack_username, user_id)
-            response = _add_request_handler(username)
 
         elif len(text) == 2 and text[0].lower() == 'remove':
             username = _resolve_username(text[1], slack_username, user_id)
@@ -87,6 +83,11 @@ def dispatcher(event, context):
             elif (action.lower() == "close"):
                 response = _close_window_handler()
         
+        elif len(text) == 3 and text[0].lower() == 'add':
+            username = _resolve_username(text[1], slack_username, user_id)
+            branch = text[2]
+            response = _add_request_handler(username, branch)
+
         elif len(text) == 3 and text[0].lower() == 'register':
             username = _resolve_username(text[1], slack_username, user_id)
             githubUsername = text[2]
@@ -160,8 +161,8 @@ def _remove_request_handler(username):
 
     return response.text
 
-def _add_request_handler(username):
-    response = requests.post("https://%s.execute-api.%s.amazonaws.com/%s/mergelock/add" % (queue_service_api_id, region, stage), data={'username': username})
+def _add_request_handler(username, branch):
+    response = requests.post("https://%s.execute-api.%s.amazonaws.com/%s/mergelock/add" % (queue_service_api_id, region, stage), data={'username': username, 'branch': branch})
     logger.info ("Status code: %d" % response.status_code)
     if response.status_code == 200:
         return '%s has been *added* to the queue :point_right:' % username
