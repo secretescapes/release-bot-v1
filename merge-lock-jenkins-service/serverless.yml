@@ -1,0 +1,17 @@
+service: merge-lock-jenkins-service
+provider:
+  profile: release-bot
+  name: aws
+  runtime: python2.7
+  stage: dev
+  region: eu-west-1
+
+package:
+  include:
+    - ../commons/**
+
+functions:
+  pipelineTriggerFunction:
+    handler: handler.pipelineTriggerFunction
+    events:
+      - sns:  arn:aws:sns:${opt:region}:${file(../env_vars.yml):ACCOUNT_ID}:${opt:stage}-new_top_listener
