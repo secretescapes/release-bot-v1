@@ -1,15 +1,11 @@
-import boto3
-import botocore
 import logging
 import json
 import os
 import sys
-import urlparse
 
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(here, './vendored'))
 sys.path.append(os.path.join(here, './commons'))
-import requests
 from jenkinsapi.jenkins import Jenkins
 from commons import publish_to_sns
 
@@ -23,6 +19,8 @@ load_dotenv(dotenv_path)
 stage = os.environ.get("STAGE")
 region = os.environ.get("REGION")
 account_id = os.environ.get("ACCOUNT_ID")
+DEV_JENKINS_SERVICE_API_ID = os.environ.get("DEV_JENKINS_SERVICE_API_ID")
+
 
 def pipelineTriggerFunction(event, context):
     logger.info("Pipeline Trigger function invoked with event: %s" % event)
@@ -33,12 +31,10 @@ def pipelineTriggerFunction(event, context):
         return
 
     branch = queue[0]['branch']
-    #TODO: Use params for this
-    return_url = "https://gx23wyi7sl.execute-api.eu-west-1.amazonaws.com/dev/mergelock-jenkins/status"
+    return_url = "https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock-jenkins/status" % (DEV_JENKINS_SERVICE_API_ID, stage)
     logger.info("Branch %s will be send to Jenkins" % branch)
     jenkins_client = Jenkins('http://jenkins.secretescapes.com:9090', 'mario.martinez@secretescapes.com', '40116ff0cc3575a7ee72e889b05effb3')
-    jenkins_client['merge-to-master'].invoke(build_params={'BRANCH_TO_MERGE': branch, 'NOTIFICATION_ENDPOINT': return_url})
-   
+    jenkins_client['merge-to-master'].invoke(build_params={'BRANCH_TO_MERGE': branch, 'NOTIFICATION_ENDPOINT': return_url})  
     return
 
 
@@ -46,20 +42,36 @@ def statusUpdateFunction(event, context):
 	try:
 		logger.info("Status Update function invoked with event: %s" % event)
 		state = json.loads(event['body'])['state']
-		outcome = json.loads(event['body'])['outcome']
-		message = json.loads(event['body'])['message']
 		branch = json.loads(event['body'])['branch']
 		url = json.loads(event['body'])['url']
 
-		logger.info("%s %s %s %s %s"% (state, outcome, message, branch, url))
+		logger.info("%s %s %s" % (state, branch, url))
 
-		payload = {'state':state, 'branch': branch, 'url':url}
-		publish_to_sns.publish(stage, "pipeline", account_id, region, payload)
+		message = _create_message(state, branch, url)
+		if message:
+			payload = {'text': message}
+			publish_to_sns.publish(stage, "pipeline", account_id, region, payload)
 	
 	except Exception as e:
 		logger.error(e)
 	
 	return {
-                "statusCode": 200
-            }
-	
+		"statusCode": 200
+	}
+
+
+def _create_message(state, branch, url):
+	if state == 'START':
+		return ":slightly_smiling_face: Hey, I noticed there is someone new at the top so I will try to merge master into *%s* and run tests. You can check the status here: %s" % (branch, url)
+	elif state == 'START_MERGE':
+		return
+	elif state == 'FAILURE_MERGE':
+		return ":disappointed: Unfortunately, I couldn't merge master into *%s*, you can check the status here: %s" % (branch, url)
+	elif state == 'START_TEST':
+		return ":grinning: Good news! I could merge master into *%s* and now I will run tests. You can check the status here: %s" % (branch, url)
+	elif state == 'FAILURE_TEST':
+		return ":hushed: It seems some tests failed for *%s*, please check them here: %s" % (branch, url)
+	elif state == 'SUCCESS':
+		return "All tests are passing for *%s*! you can check the results here: %s" % (branch, url)
+	elif state == 'FAILURE_ABNORMAL':
+		return ":cold_sweat: Something went wrong for *%s*, please check here: %s" % (branch, url)

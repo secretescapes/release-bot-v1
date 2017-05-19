@@ -41,7 +41,7 @@ def new_top_listener(event, context):
         logger.warn("New Top Listener invoked with empty queue")
         return
 
-    payload = {'text': ":bell:*%s*, you have aquired the merge lock!:bell:\n%s" % (queue[0]['username'], format_utils.format_queue(queue))}
+    payload = {'text': ":bell:*%s*, you have acquired the merge lock!:bell:\n%s" % (queue[0]['username'], format_utils.format_queue(queue))}
     _notify_slack(payload)
 
 def push_closed_window_listener(event, context):
@@ -87,7 +87,8 @@ def status_change_listener(event, context):
 
 def pipeline_status(event, context):
      logger.info("Pipeline Status invoked with event: %s" % event)
-     _notify_slack({'text': 'Pipeline message'})
+     received_data = json.loads(event['Records'][0]['Sns']['Message'])
+     _notify_slack({'text': received_data['text']})
 
 def _notify_slack(payload):
     url = SLACK_WEBHOOK_URL
