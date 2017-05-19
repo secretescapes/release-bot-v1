@@ -62,7 +62,7 @@ def statusUpdateFunction(event, context):
 
 def _create_message(state, branch, url):
 	if state == 'START':
-		return ":slightly_smiling_face: Hey, I noticed there is someone new at the top so I will try to merge master into *%s* and run tests. You can check the status here: %s" % (branch, url)
+		return ":slightly_smiling_face: Hey, I thought it would be good to merge master into *%s* and run tests. You can check the status here: %s" % (branch, url)
 	elif state == 'START_MERGE':
 		return
 	elif state == 'FAILURE_MERGE':
@@ -72,6 +72,6 @@ def _create_message(state, branch, url):
 	elif state == 'FAILURE_TEST':
 		return ":hushed: It seems some tests failed for *%s*, please check them here: %s" % (branch, url)
 	elif state == 'SUCCESS':
-		return "All tests are passing for *%s*! you can check the results here: %s" % (branch, url)
+		return ":white_check_mark: All tests are passing for *%s* :smile:! you can check the results here: %s" % (branch, url)
 	elif state == 'FAILURE_ABNORMAL':
 		return ":cold_sweat: Something went wrong for *%s*, please check here: %s" % (branch, url)
