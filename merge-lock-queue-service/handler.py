@@ -29,10 +29,12 @@ ACCOUNT_ID = os.environ.get("ACCOUNT_ID")
 
 sns = boto3.client('sns')
 
+
 def default(obj):
     if isinstance(obj, Decimal):
         return str(obj)
     raise TypeError
+
 
 def add(event, context):
     try:
@@ -51,8 +53,12 @@ def add(event, context):
             elif response.status_code != 200:
                 return _responseError(500, "Unexpected error")
             try:
+                new_top = len(_get_queue()) == 0
                 _insert_to_queue(username, branch)
                 _publish_add_user(username)
+                if new_top:
+                    _publish_new_top()
+
                 return {
                     "statusCode": 200
                 }
@@ -69,6 +75,7 @@ def add(event, context):
             "body": '{"error": "Unexpected error"}'
         }
 
+
 def list(event, context):
     try:
         return {
@@ -81,6 +88,7 @@ def list(event, context):
             "statusCode": 500,
             "body": '{"error":"Unexpected Error"}'
         }
+
 
 def remove(event, context):
     logger.info("Remove invoke with event: %s" % event)
@@ -108,6 +116,7 @@ def remove(event, context):
             "body": '{"error":"You must provide a username"}'
         }
 
+
 def pop(event, context):
     try:
         logger.info("Pop executed with event: %s" % event)
@@ -133,12 +142,14 @@ def pop(event, context):
         logger.error(e)
         return _responseError(500, "Unexpected Error")
 
+
 def _extract_username_from_event_for_pop(event):
     if 'pathParameters' in event:
         return event['pathParameters']['username']
     else:
         received_data = json.loads(event['Records'][0]['Sns']['Message'])
         return received_data['username']
+
 
 def back(event, context):
     logger.info("Back invoked with event: %s" % event)
@@ -201,6 +212,7 @@ def _swapAndNotify(user_1, user_2):
     except Exception as e:
         logger.error("Exception taking snapshot of the queue after removing")
 
+
 def _removeAndNotify(username):
     logger.info("remove and notify %s" % username)
     try:
@@ -226,27 +238,32 @@ def _publish_unauthorized_push(username):
     payload = {'username': username, 'queue': json.dumps(_get_queue(), default=default)}
     _publish(payload, 'unauthorized_push_listener')
 
+
 def _publish_new_top():
     logger.info("Publish new user at top")
     payload = {'queue': json.dumps(_get_queue(), default=default)}
     _publish(payload, 'new_top_listener')
+
 
 def _publish_add_user(username):
     logger.info("Publish add user %s" % username)
     payload = {'username': username, 'queue': json.dumps(_get_queue(), default=default)}
     _publish(payload, 'user_added_listener')
 
+
 def _publish(payload, topic):
     try:
         publish_to_sns.publish(stage, topic, ACCOUNT_ID, region, payload)
     except Exception as e:
         logger.error("Exception publishing: %s" % e)
-    
+ 
+
 def _responseError(status_code, error_msg):
     return {
             "statusCode": status_code,
             "body": '{"error": "%s"}' % error_msg
         }
+
 
 def _get_top_user():
     queue = _get_queue()
@@ -255,11 +272,13 @@ def _get_top_user():
     else:
         None
 
+
 def _get_queue():
     table = _getTable('merge-lock')
     response = table.scan()
     logger.info("Response: %s" % response)
     return sorted(response['Items'], key=lambda k: k['timestamp'])
+
 
 def _get_username(event):
     try:
@@ -273,6 +292,7 @@ def _getTable(table_name):
     dynamodb = boto3.resource('dynamodb', region_name=region)
     return dynamodb.Table("%s-%s" %(table_name, stage))
 
+
 def _insert_to_queue(username, branch, timestamp = None):
     if (not timestamp):
         timestamp = int(round(time.time() * 1000))
@@ -285,6 +305,7 @@ def _insert_to_queue(username, branch, timestamp = None):
                 },
                 ConditionExpression = 'attribute_not_exists(username)'
             )
+
 
 def _update_to_queue(username, timestamp = None):
     if (not timestamp):
@@ -301,10 +322,12 @@ def _update_to_queue(username, timestamp = None):
                 }
             )
 
+
 def _insert(item, table):
     return table.put_item (
                 Item = item
             )
+
 
 def _remove(username, table):
     table.delete_item(
@@ -314,13 +337,16 @@ def _remove(username, table):
         ConditionExpression = 'attribute_exists(username)'
     )
 
+
 def _getUsernameFromBody(body):
     parsed = urlparse.parse_qs(body)
     return parsed['username'][0]
 
+
 def _getBranchFromBody(body):
     parsed = urlparse.parse_qs(body)
     return parsed['branch'][0]
+
 
 def _process_exception_for_remove(e, username):
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
@@ -333,6 +359,7 @@ def _process_exception_for_remove(e, username):
             "statusCode": 401,
             "body": '{"error": "User %s was not in the queue"}' % username
         }
+
 
 def _process_exception_for_insert(e, username):
     if e.response['Error']['Code'] != 'ConditionalCheckFailedException':
