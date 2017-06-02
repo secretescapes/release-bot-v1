@@ -88,11 +88,11 @@ def status_change_listener(event, context):
 def pipeline_status(event, context):
      logger.info("Pipeline Status invoked with event: %s" % event)
      received_data = json.loads(event['Records'][0]['Sns']['Message'])
-     _notify_slack({'text': received_data['text']})
+     _notify_slack(received_data)
 
 def _notify_slack(payload):
     url = SLACK_WEBHOOK_URL
-    payload = {'text': payload['text']}
+    # payload = {'text': payload['text']}
     headers = {'content-type': 'application/json'}
 
     logger.info("This payload will be sent do the webhook: %s" % payload)

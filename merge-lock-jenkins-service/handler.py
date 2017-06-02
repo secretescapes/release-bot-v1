@@ -50,9 +50,8 @@ def statusUpdateFunction(event, context):
 
 		logger.info("%s %s %s" % (state, branch, url))
 
-		message = _create_message(state, branch, url)
-		if message:
-			payload = {'text': message}
+		payload = _create_message_payload(state, branch, url)
+		if payload:
 			publish_to_sns.publish(stage, "pipeline", account_id, region, payload)
 	
 	except Exception as e:
@@ -63,18 +62,27 @@ def statusUpdateFunction(event, context):
 	}
 
 
-def _create_message(state, branch, url):
+def _create_message_payload(state, branch, url):
 	if state == 'START':
-		return ":slightly_smiling_face: Hey, I thought it would be good to merge master into *%s* and run tests. You can check the status here: %s" % (branch, url)
-	elif state == 'START_MERGE':
-		return
+		message = "Merging master."
 	elif state == 'FAILURE_MERGE':
-		return ":disappointed: Unfortunately, I couldn't merge master into *%s*, you can check the status here: %s" % (branch, url)
+		message = "Merge failed."
 	elif state == 'START_TEST':
-		return ":grinning: Good news! I could merge master into *%s* and now I will run tests. You can check the status here: %s" % (branch, url)
+		message = "Merge successful."
 	elif state == 'FAILURE_TEST':
-		return ":hushed: It seems some tests failed for *%s*, please check them here: %s" % (branch, url)
+		message = "Test failures."
 	elif state == 'SUCCESS':
-		return ":white_check_mark: All tests are passing for *%s* :smile:! you can check the results here: %s" % (branch, url)
+		message = "Tests successful."
 	elif state == 'FAILURE_ABNORMAL':
-		return ":cold_sweat: Something went wrong for *%s*, please check here: %s" % (branch, url)
+		message = "The job was stopped due to an unexpected failure."
+
+	positive = 'FAILURE' not in state
+	return {
+		"attachments": [
+			{
+				"title": ":lock: <{0}|{1}>".format(url, branch),
+				"text": message,
+				"color": "danger" if "FAILURE" in state else "good" if state == "SUCCESS" else None
+			}
+		]
+	}
