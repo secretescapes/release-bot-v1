@@ -19,7 +19,11 @@ load_dotenv(dotenv_path)
 stage = os.environ.get("STAGE")
 region = os.environ.get("REGION")
 account_id = os.environ.get("ACCOUNT_ID")
-DEV_JENKINS_SERVICE_API_ID = os.environ.get("DEV_JENKINS_SERVICE_API_ID")
+JENKINS_SERVICE_API_ID = os.environ.get("%s_JENKINS_SERVICE_API_ID" % stage.upper())
+
+JENKINS_URL = os.environ.get("%s_JENKINS_URL" % stage.upper())
+JENKINS_USERNAME = os.environ.get("%s_JENKINS_USERNAME" % stage.upper())
+JENKINS_TOKEN = os.environ.get("%s_JENKINS_TOKEN" % stage.upper())
 
 
 def pipelineTriggerFunction(event, context):
@@ -31,9 +35,9 @@ def pipelineTriggerFunction(event, context):
         return
 
     branch = queue[0]['branch']
-    return_url = "https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock-jenkins/status" % (DEV_JENKINS_SERVICE_API_ID, stage)
+    return_url = "https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock-jenkins/status" % (JENKINS_SERVICE_API_ID, stage)
     logger.info("Branch %s will be send to Jenkins" % branch)
-    jenkins_client = Jenkins('http://jenkins.secretescapes.com:9090', 'mario.martinez@secretescapes.com', '40116ff0cc3575a7ee72e889b05effb3')
+    jenkins_client = Jenkins(JENKINS_URL, JENKINS_USERNAME, JENKINS_TOKEN)
     jenkins_client['merge-to-master'].invoke(build_params={'BRANCH_TO_MERGE': branch, 'NOTIFICATION_ENDPOINT': return_url})  
     return
 
