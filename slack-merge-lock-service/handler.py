@@ -82,7 +82,9 @@ def dispatcher(event, context):
                 response = _open_window_handler()
             elif (action.lower() == "close"):
                 response = _close_window_handler()
-        
+        elif len(text) == 2 and text[0].lower() == 'add':
+            response = "%s\n*remember that you have to provide a branch name*: `/lock add [username] [branch]`" % response
+
         elif len(text) == 3 and text[0].lower() == 'add':
             username = _resolve_username(text[1], slack_username, user_id)
             branch = text[2]
