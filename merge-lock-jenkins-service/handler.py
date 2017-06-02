@@ -6,7 +6,6 @@ import sys
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(here, './vendored'))
 sys.path.append(os.path.join(here, './commons'))
-from jenkinsapi.jenkins import Jenkins
 from commons import publish_to_sns
 
 logger = logging.getLogger()
@@ -16,13 +15,14 @@ from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
+import requests
+
 stage = os.environ.get("STAGE")
 region = os.environ.get("REGION")
 account_id = os.environ.get("ACCOUNT_ID")
 JENKINS_SERVICE_API_ID = os.environ.get("%s_JENKINS_SERVICE_API_ID" % stage.upper())
 
 JENKINS_URL = os.environ.get("%s_JENKINS_URL" % stage.upper())
-JENKINS_USERNAME = os.environ.get("%s_JENKINS_USERNAME" % stage.upper())
 JENKINS_TOKEN = os.environ.get("%s_JENKINS_TOKEN" % stage.upper())
 
 
@@ -37,8 +37,7 @@ def pipelineTriggerFunction(event, context):
     branch = queue[0]['branch']
     return_url = "https://%s.execute-api.eu-west-1.amazonaws.com/%s/mergelock-jenkins/status" % (JENKINS_SERVICE_API_ID, stage)
     logger.info("Branch %s will be send to Jenkins" % branch)
-    jenkins_client = Jenkins(JENKINS_URL, JENKINS_USERNAME, JENKINS_TOKEN)
-    jenkins_client['merge-to-master'].invoke(build_params={'BRANCH_TO_MERGE': branch, 'NOTIFICATION_ENDPOINT': return_url})  
+    requests.post("%s/buildByToken/buildWithParameters?token=%s&job=merge-to-master"%(JENKINS_URL, JENKINS_TOKEN), data={'BRANCH_TO_MERGE': branch, 'NOTIFICATION_ENDPOINT': return_url})
     return
 
 

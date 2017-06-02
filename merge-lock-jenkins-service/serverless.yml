@@ -28,9 +28,6 @@ custom:
     DEV_JENKINS_URL: ${file(../env_vars.yml):DEV_JENKINS_URL}
     PROD_JENKINS_URL: ${file(../env_vars.yml):PROD_JENKINS_URL}
 
-    DEV_JENKINS_USERNAME: ${file(../env_vars.yml):DEV_JENKINS_USERNAME}
-    PROD_JENKINS_USERNAME: ${file(../env_vars.yml):PROD_JENKINS_USERNAME}
-
     DEV_JENKINS_TOKEN: ${file(../env_vars.yml):DEV_JENKINS_TOKEN}
     PROD_JENKINS_TOKEN: ${file(../env_vars.yml):PROD_JENKINS_TOKEN}
 
