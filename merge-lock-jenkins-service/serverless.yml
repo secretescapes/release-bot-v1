@@ -36,6 +36,7 @@ functions:
     handler: handler.pipelineTriggerFunction
     events:
       - sns:  arn:aws:sns:${opt:region}:${file(../env_vars.yml):ACCOUNT_ID}:${opt:stage}-new_top_listener
+      - sns: arn:aws:sns:${opt:region}:${file(../env_vars.yml):ACCOUNT_ID}:${opt:stage}-unauthorized_push_listener
   updateStatusFunction:
     handler: handler.statusUpdateFunction
     events:
