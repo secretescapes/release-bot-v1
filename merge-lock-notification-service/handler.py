@@ -72,7 +72,7 @@ def status_change_listener(event, context):
         text = ":trainonfire:The release window is now OPEN!:trainonfire:"
     
     elif new_status == "CLOSE":
-        text = ":construction:The release window is now CLOSE!:construction:"
+        text = ":construction:The release window is now CLOSED!:construction:"
 
     url = "https://%s.execute-api.%s.amazonaws.com/%s/mergelock/list" % (queue_service_api_id, region, stage)
     response = requests.get(url)
