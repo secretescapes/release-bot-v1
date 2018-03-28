@@ -35,14 +35,14 @@ functions:
       - http:
           path: window/open
           method: get
-      - schedule: cron(0 10 ? * MON-THU *)
+      - schedule: cron(0 9 ? * MON-THU *)
   functionClose:
     handler: handler.close
     events:
       - http:
           path: window/close
           method: get
-      - schedule: cron(0 16 ? * MON-THU *)
+      - schedule: cron(0 15 ? * MON-THU *)
   functionStatus:
     handler: handler.status
     events:
