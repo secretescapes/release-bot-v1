@@ -124,7 +124,7 @@ def pop(event, context):
         logger.info("username: %s" % username)
         top_user = _get_top_user()
         logger.info("Top user is %s" %top_user)
-        if not username or username != top_user:
+        if not username or not (username in [top_user, "se-dev-machine"]):
             _publish_unauthorized_push(username)
             return _responseError(400, "The user provided must be at the top of the queue")
         
